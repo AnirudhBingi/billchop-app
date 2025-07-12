@@ -239,14 +239,6 @@ export default function AppNavigator() {
           headerShown: false
         }}
       />
-      <Stack.Screen 
-        name="AIChat" 
-        component={AIChatScreen}
-        options={{ 
-          title: 'AI Assistant',
-          headerShown: false
-        }}
-      />
     </Stack.Navigator>
   );
 }
