@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import AnimatedButton from '../components/AnimatedButton';
 import { Expense, Group } from '../types';
 import { format } from 'date-fns';
 import { cn } from '../utils/cn';
+import { mockUsers, mockGroups, mockExpenses, mockChores, mockPersonalExpenses } from '../utils/mockData';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -19,16 +20,51 @@ export default function ExpensesScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { currentUser, settings, friends } = useUserStore();
-  const { expenses, groups } = useExpenseStore();
+  const { expenses, groups, addExpense, addGroup } = useExpenseStore();
   const [selectedTab, setSelectedTab] = useState<'shared' | 'groups'>('shared');
   
   const isDark = settings.theme === 'dark';
   
   const filteredExpenses = expenses.filter(e => !e.isDraft);
   const draftExpenses = expenses.filter(e => e.isDraft);
+  
+  // Initialize mock data if needed
+  useEffect(() => {
+    if (expenses.length === 0 && groups.length === 0) {
+      console.log('Initializing mock data...');
+      
+      // Set current user if not set
+      if (!currentUser) {
+        useUserStore.getState().setCurrentUser(mockUsers[0]);
+        
+        // Add friends
+        mockUsers.slice(1).forEach(user => {
+          useUserStore.getState().addFriend(user);
+        });
+      }
+      
+      // Add groups first
+      mockGroups.forEach(group => {
+        addGroup(group);
+      });
+      
+      // Add expenses
+      mockExpenses.forEach(expense => {
+        addExpense(expense);
+      });
+    }
+  }, [expenses.length, groups.length, currentUser]);
+  
+  // Debug: Log the data to see what's available
+  console.log('Total expenses:', expenses.length);
+  console.log('Filtered expenses:', filteredExpenses.length);
+  console.log('Groups:', groups.length);
+  console.log('Friends:', friends.length);
 
   const ExpenseItem = ({ expense }: { expense: Expense }) => {
-    const paidByUser = friends.find(f => f.id === expense.paidBy) || currentUser;
+    const paidByUser = friends.find(f => f.id === expense.paidBy) || 
+                      (currentUser && currentUser.id === expense.paidBy ? currentUser : null) ||
+                      { id: expense.paidBy, name: 'Unknown User', email: '', createdAt: new Date() };
     const group = expense.groupId ? groups.find(g => g.id === expense.groupId) : null;
     
     return (
@@ -267,11 +303,31 @@ export default function ExpensesScreen() {
                   )}>
                     Start splitting expenses with your roommates and friends
                   </Text>
-                  <AnimatedButton
-                    title="Add Shared Expense"
-                    className="mt-4"
-                    onPress={() => navigation.navigate('AddExpense', {})}
-                  />
+                  <View className="flex-row space-x-2 mt-4">
+                    <AnimatedButton
+                      title="Add Sample Data"
+                      variant="outline"
+                      size="sm"
+                      onPress={() => {
+                        console.log('Adding sample data...');
+                        // Force add mock data
+                        mockGroups.forEach(group => {
+                          console.log('Adding group:', group.name);
+                          addGroup(group);
+                        });
+                        mockExpenses.forEach(expense => {
+                          console.log('Adding expense:', expense.title);
+                          addExpense(expense);
+                        });
+                        console.log('Sample data added!');
+                      }}
+                    />
+                    <AnimatedButton
+                      title="Add Shared Expense"
+                      size="sm"
+                      onPress={() => navigation.navigate('AddExpense', {})}
+                    />
+                  </View>
                 </View>
               </GlassCard>
             )}
