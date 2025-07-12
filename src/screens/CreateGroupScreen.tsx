@@ -238,14 +238,37 @@ export default function CreateGroupScreen() {
           shadowRadius: 8,
           elevation: 3
         }}>
-          <Text style={{ 
-            fontSize: 18, 
-            fontWeight: '600', 
-            color: isDark ? '#FFFFFF' : '#111827',
-            marginBottom: 16
-          }}>
-            Add Members ({selectedMembers.length} selected)
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Text style={{ 
+              fontSize: 18, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827'
+            }}>
+              Add Members ({selectedMembers.length} selected)
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                onPress={() => navigation.navigate('AddFriend' as any)}
+                style={{
+                  padding: 8,
+                  borderRadius: 8,
+                  backgroundColor: '#10B981'
+                }}
+              >
+                <Ionicons name="person-add" size={16} color="white" />
+              </Pressable>
+              <Pressable
+                onPress={() => Alert.alert('Import Contacts', 'Contact import feature coming soon!')}
+                style={{
+                  padding: 8,
+                  borderRadius: 8,
+                  backgroundColor: '#3B82F6'
+                }}
+              >
+                <Ionicons name="people" size={16} color="white" />
+              </Pressable>
+            </View>
+          </View>
           
           {/* Current user (always included) */}
           <View style={{
