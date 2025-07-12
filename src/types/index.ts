@@ -93,6 +93,8 @@ export interface PersonalExpense {
   date: Date;
   description?: string;
   isHomeCountry: boolean;
+  userId: string;
+  createdAt: Date;
 }
 
 export interface Budget {
@@ -103,6 +105,38 @@ export interface Budget {
   currency: string;
   period: 'daily' | 'weekly' | 'monthly';
   isHomeCountry: boolean;
+  userId: string;
+  createdAt: Date;
+  alertThreshold: number; // percentage (e.g., 80 for 80%)
+  isActive: boolean;
+}
+
+export interface FinancialGoal {
+  id: string;
+  title: string;
+  description?: string;
+  targetAmount: number;
+  currentAmount: number;
+  currency: string;
+  category: string;
+  targetDate: Date;
+  isHomeCountry: boolean;
+  userId: string;
+  createdAt: Date;
+  isCompleted: boolean;
+  priority: 'low' | 'medium' | 'high';
+}
+
+export interface SpendingInsight {
+  id: string;
+  type: 'warning' | 'tip' | 'achievement' | 'trend';
+  title: string;
+  description: string;
+  category?: string;
+  amount?: number;
+  percentage?: number;
+  createdAt: Date;
+  isRead: boolean;
 }
 
 export interface Currency {

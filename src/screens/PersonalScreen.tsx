@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, FlatList, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -8,9 +8,8 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import GlassCard from '../components/GlassCard';
-import AnimatedButton from '../components/AnimatedButton';
-import { PersonalExpense } from '../types';
-import { format } from 'date-fns';
+import { PersonalExpense, Budget, FinancialGoal, SpendingInsight } from '../types';
+import { format, startOfMonth, endOfMonth, isAfter } from 'date-fns';
 import { cn } from '../utils/cn';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
@@ -20,107 +19,108 @@ export default function PersonalScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { currentUser, settings } = useUserStore();
-  const { personalExpenses } = useExpenseStore();
+  const { 
+    personalExpenses, 
+    budgets, 
+    financialGoals, 
+    spendingInsights,
+    addBudget,
+    addGoal,
+    updateBudget,
+    generateInsights,
+    markInsightAsRead
+  } = useExpenseStore();
+  
   const [selectedMode, setSelectedMode] = useState<'selection' | 'local' | 'home'>('selection');
   const [selectedTab, setSelectedTab] = useState<'overview' | 'budget' | 'goals' | 'insights'>('overview');
   
   const isDark = settings.theme === 'dark';
+  const userId = currentUser?.id || '';
   
-  // Revolutionary dual-currency system
-  const [localCurrency] = useState({ code: 'USD', symbol: '$' });
-  const [homeCurrency] = useState({ code: 'INR', symbol: '₹' });
+  // Currency setup
+  const localCurrency = { code: 'USD', symbol: '$' };
+  const homeCurrency = { code: 'INR', symbol: '₹' };
+  const currentCurrency = selectedMode === 'local' ? localCurrency : homeCurrency;
+  const isHomeCountry = selectedMode === 'home';
 
-  const expenses = personalExpenses.filter(e => e.type === 'expense');
-  const income = personalExpenses.filter(e => e.type === 'income');
-  
+  // Filter data based on current mode and user
+  const userExpenses = personalExpenses.filter(e => 
+    e.userId === userId && e.isHomeCountry === isHomeCountry
+  );
+  const userBudgets = budgets.filter(b => 
+    b.userId === userId && b.isHomeCountry === isHomeCountry && b.isActive
+  );
+  const userGoals = financialGoals.filter(g => 
+    g.userId === userId && g.isHomeCountry === isHomeCountry
+  );
+  const userInsights = spendingInsights.filter(i => !i.isRead);
+
+  // Calculate financial metrics
+  const expenses = userExpenses.filter(e => e.type === 'expense');
+  const income = userExpenses.filter(e => e.type === 'income');
   const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
   const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
   const netBalance = totalIncome - totalExpenses;
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      food: "bg-orange-500",
-      transportation: "bg-blue-500",
-      utilities: "bg-yellow-500",
-      entertainment: "bg-purple-500",
-      shopping: "bg-pink-500",
-      healthcare: "bg-red-500",
-      education: "bg-green-500",
-      rent: "bg-indigo-500",
-      groceries: "bg-emerald-500",
-      other: "bg-gray-500"
+  // Update budget spent amounts and generate insights
+  useEffect(() => {
+    if (userId && selectedMode !== 'selection') {
+      // Update budget spent amounts
+      const monthStart = startOfMonth(new Date());
+      const monthEnd = endOfMonth(new Date());
+      
+      userBudgets.forEach(budget => {
+        const categoryExpenses = expenses.filter(e => 
+          e.category === budget.category &&
+          e.date >= monthStart &&
+          e.date <= monthEnd
+        );
+        const spent = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
+        
+        if (spent !== budget.spent) {
+          updateBudget(budget.id, { spent });
+        }
+      });
+
+      // Generate insights
+      generateInsights(userId);
+    }
+  }, [userExpenses, selectedMode, userId]);
+
+  const createQuickBudget = (category: string, limit: number) => {
+    const budget: Budget = {
+      id: Date.now().toString(),
+      category,
+      limit,
+      spent: 0,
+      currency: currentCurrency.code,
+      period: 'monthly',
+      isHomeCountry,
+      userId,
+      createdAt: new Date(),
+      alertThreshold: 80,
+      isActive: true
     };
-    return colors[category] || "bg-gray-500";
+    addBudget(budget);
   };
 
-  const PersonalExpenseItem = ({ item }: { item: PersonalExpense }) => (
-    <GlassCard className="mb-3">
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1">
-          <Text className={cn(
-            "font-semibold text-base",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            {item.title}
-          </Text>
-          
-          {item.description && (
-            <Text className={cn(
-              "text-sm opacity-70 mt-1",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
-              {item.description}
-            </Text>
-          )}
-          
-          <View className="flex-row items-center mt-2">
-            <View className={cn(
-              "px-2 py-1 rounded-full mr-2",
-              getCategoryColor(item.category)
-            )}>
-              <Text className="text-xs font-medium text-white">
-                {item.category.toUpperCase()}
-              </Text>
-            </View>
-            
-            <View className={cn(
-              "px-2 py-1 rounded-full",
-              item.type === 'income' ? "bg-green-500/20" : "bg-red-500/20"
-            )}>
-              <Text className={cn(
-                "text-xs font-medium",
-                item.type === 'income' ? "text-green-500" : "text-red-500"
-              )}>
-                {item.type.toUpperCase()}
-              </Text>
-            </View>
-          </View>
-          
-          <Text className={cn(
-            "text-xs opacity-60 mt-2",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            {format(new Date(item.date), 'MMM dd, yyyy')}
-          </Text>
-        </View>
-        
-        <View className="items-end">
-          <Text className={cn(
-            "text-lg font-bold",
-            item.type === 'income' ? "text-green-500" : isDark ? "text-white" : "text-gray-900"
-          )}>
-            ${item.amount.toFixed(2)}
-          </Text>
-          <Text className={cn(
-            "text-xs opacity-60",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            {item.currency}
-          </Text>
-        </View>
-      </View>
-    </GlassCard>
-  );
+  const createQuickGoal = (title: string, targetAmount: number, category: string) => {
+    const goal: FinancialGoal = {
+      id: Date.now().toString(),
+      title,
+      targetAmount,
+      currentAmount: 0,
+      currency: currentCurrency.code,
+      category,
+      targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+      isHomeCountry,
+      userId,
+      createdAt: new Date(),
+      isCompleted: false,
+      priority: 'medium'
+    };
+    addGoal(goal);
+  };
 
   // Currency Selection Screen
   if (selectedMode === 'selection') {
@@ -140,171 +140,91 @@ export default function PersonalScreen() {
               fontSize: 16, 
               color: isDark ? '#9CA3AF' : '#6B7280' 
             }}>
-              Choose your finance mode to get started
+              Advanced financial management for international students
             </Text>
           </Animated.View>
 
-          <Animated.View 
-            entering={FadeInUp.delay(100)} 
-            style={{ 
-              backgroundColor: isDark ? '#1F2937' : '#FFFFFF', 
-              borderRadius: 16, 
-              padding: 20, 
-              marginBottom: 20,
-              shadowColor: '#000', 
-              shadowOffset: { width: 0, height: 2 }, 
-              shadowOpacity: 0.1, 
-              shadowRadius: 8, 
-              elevation: 3
-            }}
-          >
-            <Text style={{ 
-              fontSize: 18, 
-              fontWeight: '600', 
-              color: isDark ? '#FFFFFF' : '#111827', 
-              marginBottom: 16 
-            }}>
-              🌍 Dual-Currency System
-            </Text>
-            <Text style={{ 
-              fontSize: 14, 
-              color: isDark ? '#9CA3AF' : '#6B7280', 
-              marginBottom: 20 
-            }}>
-              Perfect for international students - manage both local and home country finances
-            </Text>
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+            <Pressable
+              onPress={() => setSelectedMode('local')}
+              style={{
+                flex: 1, 
+                padding: 24, 
+                borderRadius: 16, 
+                backgroundColor: '#3B82F6', 
+                alignItems: 'center'
+              }}
+            >
+              <Ionicons name="location" size={32} color="white" />
+              <Text style={{ 
+                color: 'white', 
+                fontWeight: '600', 
+                marginTop: 12, 
+                textAlign: 'center' 
+              }}>
+                🏠 Local Finances
+              </Text>
+              <Text style={{ 
+                color: 'white', 
+                opacity: 0.8, 
+                fontSize: 12, 
+                marginTop: 4, 
+                textAlign: 'center' 
+              }}>
+                {localCurrency.symbol} {localCurrency.code}
+              </Text>
+            </Pressable>
             
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Pressable
-                onPress={() => setSelectedMode('local')}
-                style={{
-                  flex: 1, 
-                  padding: 24, 
-                  borderRadius: 12, 
-                  backgroundColor: '#3B82F6', 
-                  alignItems: 'center'
-                }}
-              >
-                <Ionicons name="location" size={32} color="white" />
-                <Text style={{ 
-                  color: 'white', 
-                  fontWeight: '600', 
-                  marginTop: 12, 
-                  textAlign: 'center' 
-                }}>
-                  🏠 Local Finances
-                </Text>
-                <Text style={{ 
-                  color: 'white', 
-                  opacity: 0.8, 
-                  fontSize: 12, 
-                  marginTop: 4, 
-                  textAlign: 'center' 
-                }}>
-                  {localCurrency.symbol} {localCurrency.code} • Where you live now
-                </Text>
-              </Pressable>
-              
-              <Pressable
-                onPress={() => setSelectedMode('home')}
-                style={{
-                  flex: 1, 
-                  padding: 24, 
-                  borderRadius: 12, 
-                  backgroundColor: '#10B981', 
-                  alignItems: 'center'
-                }}
-              >
-                <Ionicons name="home" size={32} color="white" />
-                <Text style={{ 
-                  color: 'white', 
-                  fontWeight: '600', 
-                  marginTop: 12, 
-                  textAlign: 'center' 
-                }}>
-                  🏡 Home Country
-                </Text>
-                <Text style={{ 
-                  color: 'white', 
-                  opacity: 0.8, 
-                  fontSize: 12, 
-                  marginTop: 4, 
-                  textAlign: 'center' 
-                }}>
-                  {homeCurrency.symbol} {homeCurrency.code} • Your original country
-                </Text>
-              </Pressable>
-            </View>
-          </Animated.View>
-
-          <Animated.View 
-            entering={FadeInUp.delay(200)} 
-            style={{ 
-              backgroundColor: isDark ? '#1F2937' : '#FFFFFF', 
-              borderRadius: 16, 
-              padding: 20,
-              shadowColor: '#000', 
-              shadowOffset: { width: 0, height: 2 }, 
-              shadowOpacity: 0.1, 
-              shadowRadius: 8, 
-              elevation: 3
-            }}
-          >
-            <Text style={{ 
-              fontSize: 16, 
-              fontWeight: '600', 
-              color: isDark ? '#FFFFFF' : '#111827', 
-              marginBottom: 12 
-            }}>
-              ✨ Revolutionary Features
-            </Text>
-            <View style={{ gap: 8 }}>
-              <Text style={{ fontSize: 14, color: isDark ? '#9CA3AF' : '#6B7280' }}>
-                📊 Smart budgeting with AI insights
+            <Pressable
+              onPress={() => setSelectedMode('home')}
+              style={{
+                flex: 1, 
+                padding: 24, 
+                borderRadius: 16, 
+                backgroundColor: '#10B981', 
+                alignItems: 'center'
+              }}
+            >
+              <Ionicons name="home" size={32} color="white" />
+              <Text style={{ 
+                color: 'white', 
+                fontWeight: '600', 
+                marginTop: 12, 
+                textAlign: 'center' 
+              }}>
+                🏡 Home Country
               </Text>
-              <Text style={{ fontSize: 14, color: isDark ? '#9CA3AF' : '#6B7280' }}>
-                🎯 Goal tracking with progress visualization
+              <Text style={{ 
+                color: 'white', 
+                opacity: 0.8, 
+                fontSize: 12, 
+                marginTop: 4, 
+                textAlign: 'center' 
+              }}>
+                {homeCurrency.symbol} {homeCurrency.code}
               </Text>
-              <Text style={{ fontSize: 14, color: isDark ? '#9CA3AF' : '#6B7280' }}>
-                💱 Automatic currency conversion
-              </Text>
-              <Text style={{ fontSize: 14, color: isDark ? '#9CA3AF' : '#6B7280' }}>
-                🔮 Spending pattern prediction
-              </Text>
-            </View>
-          </Animated.View>
+            </Pressable>
+          </View>
         </ScrollView>
       </View>
     );
   }
 
-  // Main Personal Finance Dashboard
-  const currentCurrency = selectedMode === 'local' ? localCurrency : homeCurrency;
-  
   return (
     <View 
-      className={cn(
-        "flex-1",
-        isDark ? "bg-gray-900" : "bg-gray-50"
-      )}
+      className={cn("flex-1", isDark ? "bg-gray-900" : "bg-gray-50")}
       style={{ paddingTop: insets.top }}
     >
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-4 py-6">
-          {/* Header with Mode Switch */}
+          {/* Header */}
           <View className="flex-row items-center justify-between mb-6">
             <View className="flex-1">
-              <Text className={cn(
-                "text-2xl font-bold",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
+              <Text className={cn("text-2xl font-bold", isDark ? "text-white" : "text-gray-900")}>
                 {selectedMode === 'local' ? '🏠 Local' : '🏡 Home'} Finances
               </Text>
-              <Text className={cn(
-                "text-sm opacity-70",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                {currentCurrency.symbol} {currentCurrency.code} • {selectedMode === 'local' ? 'Where you live' : 'Your home country'}
+              <Text className={cn("text-sm opacity-70", isDark ? "text-white" : "text-gray-900")}>
+                {currentCurrency.symbol} {currentCurrency.code} • Smart Money Management
               </Text>
             </View>
             <Pressable
@@ -320,74 +240,37 @@ export default function PersonalScreen() {
           </View>
 
           {/* Quick Actions */}
-          <View style={{ 
-            backgroundColor: isDark ? '#1F2937' : '#FFFFFF', 
-            borderRadius: 16, 
-            padding: 16, 
-            marginBottom: 20,
-            shadowColor: '#000', 
-            shadowOffset: { width: 0, height: 2 }, 
-            shadowOpacity: 0.1, 
-            shadowRadius: 8, 
-            elevation: 3
-          }}>
-            <Text style={{ 
-              fontSize: 16, 
-              fontWeight: '600', 
-              color: isDark ? '#FFFFFF' : '#111827', 
-              marginBottom: 12 
-            }}>
+          <GlassCard className="mb-6">
+            <Text className={cn("text-lg font-semibold mb-4", isDark ? "text-white" : "text-gray-900")}>
               ⚡ Quick Actions
             </Text>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View className="flex-row gap-3">
               <Pressable
                 onPress={() => navigation.navigate('PersonalFinance', { initialType: 'income' })}
-                style={{
-                  flex: 1, 
-                  padding: 16, 
-                  borderRadius: 12, 
-                  backgroundColor: '#10B981', 
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center'
-                }}
+                className="flex-1 bg-green-500 p-4 rounded-xl items-center"
               >
-                <Ionicons name="add-circle" size={20} color="white" style={{ marginRight: 8 }} />
-                <Text style={{ color: 'white', fontWeight: '600' }}>Add Income</Text>
+                <Ionicons name="add-circle" size={20} color="white" />
+                <Text className="text-white font-semibold mt-1">Add Income</Text>
               </Pressable>
               
               <Pressable
                 onPress={() => navigation.navigate('PersonalFinance', { initialType: 'expense' })}
-                style={{
-                  flex: 1, 
-                  padding: 16, 
-                  borderRadius: 12, 
-                  backgroundColor: '#EF4444', 
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center'
-                }}
+                className="flex-1 bg-red-500 p-4 rounded-xl items-center"
               >
-                <Ionicons name="remove-circle" size={20} color="white" style={{ marginRight: 8 }} />
-                <Text style={{ color: 'white', fontWeight: '600' }}>Add Expense</Text>
+                <Ionicons name="remove-circle" size={20} color="white" />
+                <Text className="text-white font-semibold mt-1">Add Expense</Text>
               </Pressable>
             </View>
-          </View>
+          </GlassCard>
 
-          {/* Balance Overview */}
+          {/* Financial Overview */}
           <GlassCard className="mb-6">
-            <Text className={cn(
-              "text-lg font-semibold mb-4",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
+            <Text className={cn("text-lg font-semibold mb-4", isDark ? "text-white" : "text-gray-900")}>
               💰 Financial Overview
             </Text>
             <View className="flex-row justify-between">
               <View className="flex-1 items-center py-3 bg-green-500/10 rounded-l-xl">
-                <Text className={cn(
-                  "text-xs opacity-70",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
+                <Text className={cn("text-xs opacity-70", isDark ? "text-white" : "text-gray-900")}>
                   Income
                 </Text>
                 <Text className="text-lg font-bold text-green-500">
@@ -395,10 +278,7 @@ export default function PersonalScreen() {
                 </Text>
               </View>
               <View className="flex-1 items-center py-3 bg-red-500/10">
-                <Text className={cn(
-                  "text-xs opacity-70",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
+                <Text className={cn("text-xs opacity-70", isDark ? "text-white" : "text-gray-900")}>
                   Expenses
                 </Text>
                 <Text className="text-lg font-bold text-red-500">
@@ -406,16 +286,10 @@ export default function PersonalScreen() {
                 </Text>
               </View>
               <View className="flex-1 items-center py-3 bg-blue-500/10 rounded-r-xl">
-                <Text className={cn(
-                  "text-xs opacity-70",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
+                <Text className={cn("text-xs opacity-70", isDark ? "text-white" : "text-gray-900")}>
                   Balance
                 </Text>
-                <Text className={cn(
-                  "text-lg font-bold",
-                  netBalance >= 0 ? "text-blue-500" : "text-red-500"
-                )}>
+                <Text className={cn("text-lg font-bold", netBalance >= 0 ? "text-blue-500" : "text-red-500")}>
                   {currentCurrency.symbol}{netBalance.toFixed(2)}
                 </Text>
               </View>
@@ -438,43 +312,57 @@ export default function PersonalScreen() {
                   selectedTab === tab ? "text-white" : isDark ? "text-white" : "text-gray-900"
                 )}>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === 'insights' && userInsights.length > 0 && (
+                    <Text className="text-red-400"> ({userInsights.length})</Text>
+                  )}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          {/* Content based on selected tab */}
+          {/* Tab Content */}
           {selectedTab === 'overview' && (
             <View>
-              <Text className={cn(
-                "text-lg font-semibold mb-4",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                Recent Transactions
-              </Text>
-              
-              {personalExpenses.length > 0 ? (
-                <FlatList
-                  data={personalExpenses.slice(0, 5)}
-                  renderItem={({ item }) => <PersonalExpenseItem item={item} />}
-                  keyExtractor={(item) => item.id}
-                  scrollEnabled={false}
-                />
+              {userExpenses.length > 0 ? (
+                <>
+                  <Text className={cn("text-lg font-semibold mb-4", isDark ? "text-white" : "text-gray-900")}>
+                    Recent Transactions
+                  </Text>
+                  <FlatList
+                    data={userExpenses.slice(0, 5)}
+                    renderItem={({ item }) => (
+                      <GlassCard className="mb-3">
+                        <View className="flex-row justify-between items-center">
+                          <View className="flex-1">
+                            <Text className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
+                              {item.title}
+                            </Text>
+                            <Text className={cn("text-sm opacity-70 mt-1", isDark ? "text-white" : "text-gray-900")}>
+                              {item.category} • {format(new Date(item.date), 'MMM dd')}
+                            </Text>
+                          </View>
+                          <Text className={cn(
+                            "text-lg font-bold",
+                            item.type === 'income' ? "text-green-500" : "text-red-500"
+                          )}>
+                            {item.type === 'income' ? '+' : '-'}{currentCurrency.symbol}{item.amount.toFixed(2)}
+                          </Text>
+                        </View>
+                      </GlassCard>
+                    )}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={false}
+                  />
+                </>
               ) : (
                 <GlassCard>
                   <View className="items-center py-8">
                     <Ionicons name="wallet-outline" size={48} color="#9CA3AF" />
-                    <Text className={cn(
-                      "text-center mt-4 font-medium",
-                      isDark ? "text-white" : "text-gray-900"
-                    )}>
+                    <Text className={cn("text-center mt-4 font-medium", isDark ? "text-white" : "text-gray-900")}>
                       No transactions yet
                     </Text>
-                    <Text className={cn(
-                      "text-center mt-2 text-sm opacity-70",
-                      isDark ? "text-white" : "text-gray-900"
-                    )}>
-                      Add your first personal expense to get started
+                    <Text className={cn("text-center mt-2 text-sm opacity-70", isDark ? "text-white" : "text-gray-900")}>
+                      Add your first income or expense to get started
                     </Text>
                   </View>
                 </GlassCard>
@@ -483,63 +371,237 @@ export default function PersonalScreen() {
           )}
 
           {selectedTab === 'budget' && (
-            <GlassCard>
-              <View className="items-center py-8">
-                <Ionicons name="bar-chart-outline" size={48} color="#3B82F6" />
-                <Text className={cn(
-                  "text-center mt-4 font-medium",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  Smart Budgeting
-                </Text>
-                <Text className={cn(
-                  "text-center mt-2 text-sm opacity-70",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  AI-powered budget insights coming soon
-                </Text>
-              </View>
-            </GlassCard>
+            <View>
+              {userBudgets.length > 0 ? (
+                <>
+                  <Text className={cn("text-lg font-semibold mb-4", isDark ? "text-white" : "text-gray-900")}>
+                    📊 Active Budgets
+                  </Text>
+                  {userBudgets.map(budget => {
+                    const percentage = Math.min((budget.spent / budget.limit) * 100, 100);
+                    const isOverBudget = budget.spent > budget.limit;
+                    
+                    return (
+                      <GlassCard key={budget.id} className="mb-4">
+                        <View className="flex-row justify-between items-center mb-3">
+                          <Text className={cn("font-semibold capitalize", isDark ? "text-white" : "text-gray-900")}>
+                            {budget.category}
+                          </Text>
+                          <Text className={cn(
+                            "font-bold",
+                            isOverBudget ? "text-red-500" : percentage > 80 ? "text-yellow-500" : "text-green-500"
+                          )}>
+                            {currentCurrency.symbol}{budget.spent.toFixed(2)} / {currentCurrency.symbol}{budget.limit.toFixed(2)}
+                          </Text>
+                        </View>
+                        
+                        <View className="bg-gray-200 rounded-full h-3 mb-2">
+                          <View 
+                            className={cn(
+                              "h-3 rounded-full",
+                              isOverBudget ? "bg-red-500" : percentage > 80 ? "bg-yellow-500" : "bg-green-500"
+                            )}
+                            style={{ width: `${Math.min(percentage, 100)}%` }}
+                          />
+                        </View>
+                        
+                        <Text className={cn("text-sm", isDark ? "text-white" : "text-gray-900")}>
+                          {percentage.toFixed(0)}% used • Monthly budget
+                        </Text>
+                      </GlassCard>
+                    );
+                  })}
+                </>
+              ) : (
+                <GlassCard>
+                  <View className="items-center py-8">
+                    <Ionicons name="bar-chart-outline" size={48} color="#3B82F6" />
+                    <Text className={cn("text-center mt-4 font-medium", isDark ? "text-white" : "text-gray-900")}>
+                      No budgets set
+                    </Text>
+                    <Text className={cn("text-center mt-2 text-sm opacity-70 mb-4", isDark ? "text-white" : "text-gray-900")}>
+                      Create budgets to track your spending
+                    </Text>
+                    
+                    <View className="flex-row gap-2 flex-wrap justify-center">
+                      {['food', 'transportation', 'entertainment', 'shopping'].map(category => (
+                        <Pressable
+                          key={category}
+                          onPress={() => {
+                            Alert.prompt(
+                              `${category.charAt(0).toUpperCase() + category.slice(1)} Budget`,
+                              `Set monthly budget limit for ${category}:`,
+                              (value) => {
+                                const amount = parseFloat(value || '0');
+                                if (amount > 0) {
+                                  createQuickBudget(category, amount);
+                                }
+                              },
+                              'plain-text',
+                              '500'
+                            );
+                          }}
+                          className="bg-blue-500 px-3 py-2 rounded-lg"
+                        >
+                          <Text className="text-white text-sm font-medium capitalize">
+                            {category}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                </GlassCard>
+              )}
+            </View>
           )}
 
           {selectedTab === 'goals' && (
-            <GlassCard>
-              <View className="items-center py-8">
-                <Ionicons name="trophy-outline" size={48} color="#F59E0B" />
-                <Text className={cn(
-                  "text-center mt-4 font-medium",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  Financial Goals
-                </Text>
-                <Text className={cn(
-                  "text-center mt-2 text-sm opacity-70",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  Goal tracking with progress visualization coming soon
-                </Text>
-              </View>
-            </GlassCard>
+            <View>
+              {userGoals.length > 0 ? (
+                <>
+                  <Text className={cn("text-lg font-semibold mb-4", isDark ? "text-white" : "text-gray-900")}>
+                    🎯 Financial Goals
+                  </Text>
+                  {userGoals.map(goal => {
+                    const percentage = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+                    const daysLeft = Math.max(0, Math.ceil((new Date(goal.targetDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+                    
+                    return (
+                      <GlassCard key={goal.id} className="mb-4">
+                        <View className="flex-row justify-between items-center mb-3">
+                          <Text className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
+                            {goal.title}
+                          </Text>
+                          <Text className={cn(
+                            "font-bold",
+                            goal.isCompleted ? "text-green-500" : "text-blue-500"
+                          )}>
+                            {currentCurrency.symbol}{goal.currentAmount.toFixed(2)} / {currentCurrency.symbol}{goal.targetAmount.toFixed(2)}
+                          </Text>
+                        </View>
+                        
+                        <View className="bg-gray-200 rounded-full h-3 mb-2">
+                          <View 
+                            className={cn(
+                              "h-3 rounded-full",
+                              goal.isCompleted ? "bg-green-500" : "bg-blue-500"
+                            )}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </View>
+                        
+                        <View className="flex-row justify-between">
+                          <Text className={cn("text-sm", isDark ? "text-white" : "text-gray-900")}>
+                            {percentage.toFixed(0)}% complete
+                          </Text>
+                          <Text className={cn("text-sm", isDark ? "text-white" : "text-gray-900")}>
+                            {goal.isCompleted ? '✅ Completed' : `${daysLeft} days left`}
+                          </Text>
+                        </View>
+                      </GlassCard>
+                    );
+                  })}
+                </>
+              ) : (
+                <GlassCard>
+                  <View className="items-center py-8">
+                    <Ionicons name="trophy-outline" size={48} color="#F59E0B" />
+                    <Text className={cn("text-center mt-4 font-medium", isDark ? "text-white" : "text-gray-900")}>
+                      No goals set
+                    </Text>
+                    <Text className={cn("text-center mt-2 text-sm opacity-70 mb-4", isDark ? "text-white" : "text-gray-900")}>
+                      Set financial goals to track your progress
+                    </Text>
+                    
+                    <View className="flex-row gap-2 flex-wrap justify-center">
+                      {[
+                        { title: 'Emergency Fund', amount: 5000, category: 'savings' },
+                        { title: 'New Laptop', amount: 1500, category: 'shopping' },
+                        { title: 'Vacation', amount: 3000, category: 'travel' }
+                      ].map(preset => (
+                        <Pressable
+                          key={preset.title}
+                          onPress={() => createQuickGoal(preset.title, preset.amount, preset.category)}
+                          className="bg-yellow-500 px-3 py-2 rounded-lg"
+                        >
+                          <Text className="text-white text-sm font-medium">
+                            {preset.title}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                </GlassCard>
+              )}
+            </View>
           )}
 
           {selectedTab === 'insights' && (
-            <GlassCard>
-              <View className="items-center py-8">
-                <Ionicons name="analytics-outline" size={48} color="#8B5CF6" />
-                <Text className={cn(
-                  "text-center mt-4 font-medium",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  Spending Insights
-                </Text>
-                <Text className={cn(
-                  "text-center mt-2 text-sm opacity-70",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  AI-powered spending pattern analysis coming soon
-                </Text>
-              </View>
-            </GlassCard>
+            <View>
+              {userInsights.length > 0 ? (
+                <>
+                  <Text className={cn("text-lg font-semibold mb-4", isDark ? "text-white" : "text-gray-900")}>
+                    🔮 Smart Insights
+                  </Text>
+                  {userInsights.map(insight => (
+                    <GlassCard key={insight.id} className="mb-4">
+                      <View className="flex-row items-start">
+                        <View className={cn(
+                          "w-10 h-10 rounded-full items-center justify-center mr-3",
+                          insight.type === 'warning' ? "bg-red-500/20" :
+                          insight.type === 'tip' ? "bg-yellow-500/20" :
+                          insight.type === 'achievement' ? "bg-green-500/20" : "bg-blue-500/20"
+                        )}>
+                          <Ionicons 
+                            name={
+                              insight.type === 'warning' ? 'warning' :
+                              insight.type === 'tip' ? 'bulb' :
+                              insight.type === 'achievement' ? 'trophy' : 'trending-up'
+                            }
+                            size={20}
+                            color={
+                              insight.type === 'warning' ? '#EF4444' :
+                              insight.type === 'tip' ? '#F59E0B' :
+                              insight.type === 'achievement' ? '#10B981' : '#3B82F6'
+                            }
+                          />
+                        </View>
+                        
+                        <View className="flex-1">
+                          <Text className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
+                            {insight.title}
+                          </Text>
+                          <Text className={cn("text-sm opacity-80 mt-1", isDark ? "text-white" : "text-gray-900")}>
+                            {insight.description}
+                          </Text>
+                          
+                          <Pressable
+                            onPress={() => markInsightAsRead(insight.id)}
+                            className="mt-2 self-start"
+                          >
+                            <Text className="text-blue-500 text-sm font-medium">
+                              Mark as read
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </GlassCard>
+                  ))}
+                </>
+              ) : (
+                <GlassCard>
+                  <View className="items-center py-8">
+                    <Ionicons name="analytics-outline" size={48} color="#8B5CF6" />
+                    <Text className={cn("text-center mt-4 font-medium", isDark ? "text-white" : "text-gray-900")}>
+                      No new insights
+                    </Text>
+                    <Text className={cn("text-center mt-2 text-sm opacity-70", isDark ? "text-white" : "text-gray-900")}>
+                      Add more transactions to get AI-powered insights
+                    </Text>
+                  </View>
+                </GlassCard>
+              )}
+            </View>
           )}
         </View>
       </ScrollView>
