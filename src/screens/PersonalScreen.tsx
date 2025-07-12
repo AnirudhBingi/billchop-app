@@ -62,7 +62,7 @@ export default function PersonalScreen() {
   const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
   const netBalance = totalIncome - totalExpenses;
 
-  // Update budget spent amounts and generate insights
+  // Update budget spent amounts and generate insights only when needed
   useEffect(() => {
     if (userId && selectedMode !== 'selection') {
       // Update budget spent amounts
@@ -82,10 +82,18 @@ export default function PersonalScreen() {
         }
       });
 
-      // Generate insights
-      generateInsights(userId);
+      // Generate insights only if we have expenses and no recent insights
+      if (userExpenses.length > 0) {
+        const now = new Date();
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        const hasRecentInsights = userInsights.some(i => new Date(i.createdAt) > oneHourAgo);
+        
+        if (!hasRecentInsights) {
+          generateInsights(userId);
+        }
+      }
     }
-  }, [userExpenses, selectedMode, userId]);
+  }, [selectedMode, userId]); // Removed userExpenses from deps to prevent infinite loop
 
   const createQuickBudget = (category: string, limit: number) => {
     const budget: Budget = {
@@ -423,31 +431,14 @@ export default function PersonalScreen() {
                       Create budgets to track your spending
                     </Text>
                     
-                    <View className="flex-row gap-2 flex-wrap justify-center">
-                      {['food', 'transportation', 'entertainment', 'shopping'].map(category => (
-                        <Pressable
-                          key={category}
-                          onPress={() => {
-                            Alert.prompt(
-                              `${category.charAt(0).toUpperCase() + category.slice(1)} Budget`,
-                              `Set monthly budget limit for ${category}:`,
-                              (value) => {
-                                const amount = parseFloat(value || '0');
-                                if (amount > 0) {
-                                  createQuickBudget(category, amount);
-                                }
-                              },
-                              'plain-text',
-                              '500'
-                            );
-                          }}
-                          className="bg-blue-500 px-3 py-2 rounded-lg"
-                        >
-                          <Text className="text-white text-sm font-medium capitalize">
-                            {category}
-                          </Text>
-                        </Pressable>
-                      ))}
+                    <Pressable
+                      onPress={() => navigation.navigate('BudgetManager')}
+                      className="bg-blue-500 px-6 py-3 rounded-xl self-center"
+                    >
+                      <Text className="text-white font-semibold">
+                        📊 Create Your First Budget
+                      </Text>
+                    </Pressable>
                     </View>
                   </View>
                 </GlassCard>

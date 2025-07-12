@@ -20,6 +20,7 @@ import AddChoreScreen from '../screens/AddChoreScreen';
 import GroupDetailScreen from '../screens/GroupDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PersonalFinanceModal from '../screens/PersonalFinanceModal';
+import BudgetManagerModal from '../screens/BudgetManagerModal';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -33,6 +34,7 @@ export type RootStackParamList = {
   GroupDetail: { groupId: string };
   Settings: undefined;
   PersonalFinance: { initialType?: 'income' | 'expense' };
+  BudgetManager: undefined;
 };
 
 export type TabParamList = {
@@ -184,6 +186,15 @@ export default function AppNavigator() {
           title: 'Personal Finance',
           presentation: 'formSheet',
           sheetAllowedDetents: [0.8, 1.0]
+        }}
+      />
+      <Stack.Screen 
+        name="BudgetManager" 
+        component={BudgetManagerModal}
+        options={{ 
+          title: 'Budget Manager',
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.7, 1.0]
         }}
       />
     </Stack.Navigator>

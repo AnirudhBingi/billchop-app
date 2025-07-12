@@ -199,51 +199,73 @@ export const useExpenseStore = create<ExpenseState>()(
         const userBudgets = state.budgets.filter(b => b.userId === userId);
         const insights: SpendingInsight[] = [];
         
-        // Check budget overages
+        // Check budget overages - but avoid duplicates
+        const existingInsights = state.spendingInsights;
         userBudgets.forEach(budget => {
           const spentPercentage = (budget.spent / budget.limit) * 100;
           if (spentPercentage >= budget.alertThreshold) {
-            insights.push({
-              id: `budget-alert-${budget.id}-${Date.now()}`,
-              type: spentPercentage >= 100 ? 'warning' : 'tip',
-              title: spentPercentage >= 100 ? 'Budget Exceeded!' : 'Budget Alert',
-              description: `You've spent ${spentPercentage.toFixed(0)}% of your ${budget.category} budget`,
-              category: budget.category,
-              percentage: spentPercentage,
-              createdAt: new Date(),
-              isRead: false
-            });
+            const existingBudgetAlert = existingInsights.find(i => 
+              i.category === budget.category && 
+              i.type === (spentPercentage >= 100 ? 'warning' : 'tip') &&
+              !i.isRead
+            );
+            
+            if (!existingBudgetAlert) {
+              insights.push({
+                id: `budget-alert-${budget.id}-${Date.now()}`,
+                type: spentPercentage >= 100 ? 'warning' : 'tip',
+                title: spentPercentage >= 100 ? 'Budget Exceeded!' : 'Budget Alert',
+                description: `You've spent ${spentPercentage.toFixed(0)}% of your ${budget.category} budget`,
+                category: budget.category,
+                percentage: spentPercentage,
+                createdAt: new Date(),
+                isRead: false
+              });
+            }
           }
         });
         
-        // Add spending trend insights
+        // Add spending trend insights - but avoid duplicates
         const lastMonth = new Date();
         lastMonth.setMonth(lastMonth.getMonth() - 1);
         const recentExpenses = userExpenses.filter(e => e.date >= lastMonth && e.type === 'expense');
         
         if (recentExpenses.length > 0) {
-          const topCategory = recentExpenses.reduce((acc, expense) => {
-            acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
-            return acc;
-          }, {} as Record<string, number>);
+          const existingTrendInsight = existingInsights.find(i => 
+            i.type === 'trend' && 
+            !i.isRead &&
+            new Date(i.createdAt) >= lastMonth
+          );
           
-          const highestCategory = Object.entries(topCategory).sort(([,a], [,b]) => b - a)[0];
-          
-          insights.push({
-            id: `trend-${Date.now()}`,
-            type: 'trend',
-            title: 'Top Spending Category',
-            description: `You spent most on ${highestCategory[0]} this month: ${highestCategory[1].toFixed(2)}`,
-            category: highestCategory[0],
-            amount: highestCategory[1],
-            createdAt: new Date(),
-            isRead: false
-          });
+          if (!existingTrendInsight) {
+            const topCategory = recentExpenses.reduce((acc, expense) => {
+              acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+              return acc;
+            }, {} as Record<string, number>);
+            
+            const highestCategory = Object.entries(topCategory).sort(([,a], [,b]) => b - a)[0];
+            
+            if (highestCategory) {
+              insights.push({
+                id: `trend-${Date.now()}`,
+                type: 'trend',
+                title: 'Top Spending Category',
+                description: `You spent most on ${highestCategory[0]} this month: ${highestCategory[1].toFixed(2)}`,
+                category: highestCategory[0],
+                amount: highestCategory[1],
+                createdAt: new Date(),
+                isRead: false
+              });
+            }
+          }
         }
         
-        set((state) => ({
-          spendingInsights: [...state.spendingInsights, ...insights]
-        }));
+        // Only update state if we have new insights
+        if (insights.length > 0) {
+          set((state) => ({
+            spendingInsights: [...state.spendingInsights, ...insights]
+          }));
+        }
       },
       
       getGroupExpenses: (groupId) => {
