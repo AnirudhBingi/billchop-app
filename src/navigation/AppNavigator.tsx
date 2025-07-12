@@ -14,6 +14,8 @@ import SplitBillScreen from '../screens/SplitBillScreen';
 
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import ExpenseHistoryScreen from '../screens/ExpenseHistoryScreen';
+import AddFriendScreen from '../screens/AddFriendScreen';
+import CreateGroupScreen from '../screens/CreateGroupScreen';
 import AddChoreScreen from '../screens/AddChoreScreen';
 import GroupDetailScreen from '../screens/GroupDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -25,6 +27,8 @@ export type RootStackParamList = {
 
   Analytics: undefined;
   ExpenseHistory: undefined;
+  AddFriend: undefined;
+  CreateGroup: undefined;
   AddChore: { groupId?: string };
   GroupDetail: { groupId: string };
   Settings: undefined;
@@ -135,6 +139,22 @@ export default function AppNavigator() {
         component={ExpenseHistoryScreen}
         options={{ 
           title: 'Expense History',
+          headerShown: true
+        }}
+      />
+      <Stack.Screen 
+        name="AddFriend" 
+        component={AddFriendScreen}
+        options={{ 
+          title: 'Add Friend',
+          headerShown: true
+        }}
+      />
+      <Stack.Screen 
+        name="CreateGroup" 
+        component={CreateGroupScreen}
+        options={{ 
+          title: 'Create Group',
           headerShown: true
         }}
       />

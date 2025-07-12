@@ -412,7 +412,7 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false, // Remove fixed frame - allow full image
       quality: 1.0, // Higher quality for better OCR
     });
 
@@ -431,7 +431,7 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
+      allowsEditing: false, // Remove fixed frame - allow full capture
       quality: 1.0, // Higher quality for better OCR
     });
 
@@ -499,14 +499,37 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
           shadowRadius: 8,
           elevation: 3
         }}>
-          <Text style={{ 
-            fontSize: 18, 
-            fontWeight: '600', 
-            color: isDark ? '#FFFFFF' : '#111827',
-            marginBottom: 16
-          }}>
-            Who are you splitting with?
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Text style={{ 
+              fontSize: 18, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827'
+            }}>
+              Who are you splitting with?
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                onPress={() => navigation.navigate('AddFriend' as any)}
+                style={{
+                  padding: 8,
+                  borderRadius: 8,
+                  backgroundColor: '#10B981'
+                }}
+              >
+                <Ionicons name="person-add" size={16} color="white" />
+              </Pressable>
+              <Pressable
+                onPress={() => navigation.navigate('CreateGroup' as any)}
+                style={{
+                  padding: 8,
+                  borderRadius: 8,
+                  backgroundColor: '#8B5CF6'
+                }}
+              >
+                <Ionicons name="add" size={16} color="white" />
+              </Pressable>
+            </View>
+          </View>
           
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <Pressable
@@ -533,6 +556,15 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
               }}>
                 Individual Friends
               </Text>
+              {friends.length > 0 && (
+                <Text style={{
+                  fontSize: 12,
+                  color: '#6B7280',
+                  marginTop: 4
+                }}>
+                  {friends.length} friend{friends.length !== 1 ? 's' : ''}
+                </Text>
+              )}
             </Pressable>
             
             <Pressable
@@ -559,6 +591,15 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
               }}>
                 Group
               </Text>
+              {groups.length > 0 && (
+                <Text style={{
+                  fontSize: 12,
+                  color: '#6B7280',
+                  marginTop: 4
+                }}>
+                  {groups.length} group{groups.length !== 1 ? 's' : ''}
+                </Text>
+              )}
             </Pressable>
           </View>
         </View>
@@ -742,14 +783,33 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
             shadowRadius: 8,
             elevation: 3
           }}>
-            <Text style={{ 
-              fontSize: 18, 
-              fontWeight: '600', 
-              color: isDark ? '#FFFFFF' : '#111827',
-              marginBottom: 16
-            }}>
-              🛒 Select Items to Split ({selectedReceiptItems.length}/{receiptItems.length})
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ 
+                fontSize: 18, 
+                fontWeight: '600', 
+                color: isDark ? '#FFFFFF' : '#111827'
+              }}>
+                🛒 Select Items to Split
+              </Text>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ 
+                  fontSize: 12, 
+                  color: isDark ? '#9CA3AF' : '#6B7280'
+                }}>
+                  {selectedReceiptItems.length}/{receiptItems.length} selected
+                </Text>
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: 'bold', 
+                  color: '#3B82F6'
+                }}>
+                  ${receiptItems
+                    .filter(item => selectedReceiptItems.includes(item.id))
+                    .reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                    .toFixed(2)}
+                </Text>
+              </View>
+            </View>
             
             {receiptItems.map(item => (
               <View
