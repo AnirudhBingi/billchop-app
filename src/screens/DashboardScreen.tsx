@@ -15,16 +15,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Squid Game Color Palette
-const SQUID_COLORS = {
-  pink: '#E91E63',
-  lightPink: '#F7B5CA',
-  teal: '#16A085',
-  lightTeal: '#00BCD4',
-  black: '#212121',
+// Enhanced Color Palette - Dark theme optimized
+const THEME_COLORS = {
+  background: '#0A0A0B',
+  surface: '#1A1A1D',
+  primary: '#8B5CF6',
+  primaryLight: '#A78BFA',
+  secondary: '#06B6D4',
+  secondaryLight: '#22D3EE',
+  accent: '#F59E0B',
+  accentLight: '#FBBF24',
+  success: '#10B981',
+  error: '#EF4444',
+  warning: '#F59E0B',
   white: '#FFFFFF',
-  darkPink: '#C2185B',
-  darkTeal: '#138D75'
+  gray: '#6B7280',
+  lightGray: '#9CA3AF'
 };
 
 const { width } = Dimensions.get('window');
@@ -36,7 +42,6 @@ export default function DashboardScreen() {
   const { expenses, personalExpenses, budgets, financialGoals, getTotalOwed, getTotalOwing } = useExpenseStore();
   const { chores, getUserPoints } = useChoreStore();
   
-  const isDark = settings.theme === 'dark';
   const userId = currentUser?.id || '';
 
   // Initialize mock data for demo
@@ -76,47 +81,39 @@ export default function DashboardScreen() {
   const chorePoints = getUserPoints(userId);
   const pendingChores = chores.filter(c => c.assignedTo === userId && c.status === 'pending').length;
 
-  // Quick Action Data with Squid Game styling
+  // Enhanced Quick Action Data with better design
   const quickActions = [
     {
       id: 'smart-split',
       title: 'Smart Split',
-      subtitle: '📸 Scan & Split',
+      subtitle: 'Scan & Split',
       icon: 'camera',
-      colors: [SQUID_COLORS.pink, SQUID_COLORS.darkPink],
+      colors: [THEME_COLORS.primary, THEME_COLORS.primaryLight],
       onPress: () => navigation.navigate('SplitBill')
     },
     {
       id: 'ai-analytics',
       title: 'AI Analytics',
-      subtitle: '🧠 Smart Insights',
+      subtitle: 'Smart Insights',
       icon: 'analytics',
-      colors: [SQUID_COLORS.teal, SQUID_COLORS.darkTeal],
+      colors: [THEME_COLORS.secondary, THEME_COLORS.secondaryLight],
       onPress: () => navigation.navigate('Analytics')
     },
     {
       id: 'split-bill',
       title: 'Split Bill',
-      subtitle: '👥 Group Expense',
+      subtitle: 'Group Expense',
       icon: 'people',
-      colors: [SQUID_COLORS.lightPink, SQUID_COLORS.pink],
+      colors: [THEME_COLORS.accent, THEME_COLORS.accentLight],
       onPress: () => navigation.navigate('SplitBill')
     },
     {
       id: 'personal',
       title: 'Personal',
-      subtitle: '💰 My Finances',
+      subtitle: 'My Finances',
       icon: 'wallet',
-      colors: [SQUID_COLORS.lightTeal, SQUID_COLORS.teal],
+      colors: [THEME_COLORS.success, '#34D399'],
       onPress: () => navigation.navigate('MainTabs', { screen: 'Personal' })
-    },
-    {
-      id: 'add-chore',
-      title: 'Add Chore',
-      subtitle: '✅ Create Task',
-      icon: 'checkmark-circle',
-      colors: [SQUID_COLORS.pink, SQUID_COLORS.darkPink],
-      onPress: () => navigation.navigate('AddChore')
     }
   ];
 
@@ -124,7 +121,7 @@ export default function DashboardScreen() {
     <View 
       className="flex-1"
       style={{ 
-        backgroundColor: isDark ? SQUID_COLORS.black : '#F8FAFC',
+        backgroundColor: THEME_COLORS.background,
         paddingTop: insets.top 
       }}
     >
@@ -140,10 +137,12 @@ export default function DashboardScreen() {
         >
           <View className="flex-row items-center justify-between mb-2">
             <View className="flex-1">
-              <Text className="text-lg text-gray-600">Welcome back,</Text>
+              <Text style={{ color: THEME_COLORS.lightGray, fontSize: 16 }}>
+                Welcome back,
+              </Text>
               <Text 
                 className="text-2xl font-bold"
-                style={{ color: SQUID_COLORS.pink }}
+                style={{ color: THEME_COLORS.primary }}
               >
                 {currentUser?.name || 'Alex Student'}!
               </Text>
@@ -151,9 +150,9 @@ export default function DashboardScreen() {
             <Pressable
               onPress={() => navigation.navigate('Settings')}
               className="p-3 rounded-full"
-              style={{ backgroundColor: SQUID_COLORS.lightPink + '20' }}
+              style={{ backgroundColor: THEME_COLORS.surface }}
             >
-              <Ionicons name="settings" size={24} color={SQUID_COLORS.pink} />
+              <Ionicons name="settings" size={24} color={THEME_COLORS.primary} />
             </Pressable>
           </View>
         </Animated.View>
@@ -162,74 +161,87 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInUp.delay(100)} className="px-6 mb-6">
           <Text 
             className="text-lg font-bold mb-4"
-            style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+            style={{ color: THEME_COLORS.white }}
           >
             💰 Financial Overview
           </Text>
           <View 
-            className="rounded-2xl p-6 shadow-lg"
+            className="rounded-3xl p-6"
             style={{ 
-              backgroundColor: isDark ? SQUID_COLORS.black : SQUID_COLORS.white,
-              borderWidth: 2,
-              borderColor: SQUID_COLORS.lightPink
+              backgroundColor: THEME_COLORS.surface,
+              shadowColor: THEME_COLORS.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 8
             }}
           >
             <View className="flex-row justify-between mb-4">
               <View className="items-center flex-1">
-                <Text className="text-sm text-gray-500 mb-1">Net Balance</Text>
+                <Text style={{ color: THEME_COLORS.gray, fontSize: 12, marginBottom: 4 }}>
+                  Net Balance
+                </Text>
                 <Text 
                   className="text-xl font-bold"
-                  style={{ color: netBalance >= 0 ? SQUID_COLORS.teal : SQUID_COLORS.pink }}
+                  style={{ color: netBalance >= 0 ? THEME_COLORS.success : THEME_COLORS.error }}
                 >
                   ${Math.abs(netBalance).toFixed(2)}
                 </Text>
-                <Text className="text-xs text-gray-400">
+                <Text style={{ color: THEME_COLORS.lightGray, fontSize: 10 }}>
                   {netBalance >= 0 ? 'Positive' : 'Negative'}
                 </Text>
               </View>
               
               <View className="items-center flex-1">
-                <Text className="text-sm text-gray-500 mb-1">You're Owed</Text>
+                <Text style={{ color: THEME_COLORS.gray, fontSize: 12, marginBottom: 4 }}>
+                  You're Owed
+                </Text>
                 <Text 
                   className="text-xl font-bold"
-                  style={{ color: SQUID_COLORS.teal }}
+                  style={{ color: THEME_COLORS.success }}
                 >
                   ${totalOwed.toFixed(2)}
                 </Text>
-                <Text className="text-xs text-gray-400">From friends</Text>
+                <Text style={{ color: THEME_COLORS.lightGray, fontSize: 10 }}>
+                  From friends
+                </Text>
               </View>
               
               <View className="items-center flex-1">
-                <Text className="text-sm text-gray-500 mb-1">You Owe</Text>
+                <Text style={{ color: THEME_COLORS.gray, fontSize: 12, marginBottom: 4 }}>
+                  You Owe
+                </Text>
                 <Text 
                   className="text-xl font-bold"
-                  style={{ color: SQUID_COLORS.pink }}
+                  style={{ color: THEME_COLORS.error }}
                 >
                   ${totalOwing.toFixed(2)}
                 </Text>
-                <Text className="text-xs text-gray-400">To friends</Text>
+                <Text style={{ color: THEME_COLORS.lightGray, fontSize: 10 }}>
+                  To friends
+                </Text>
               </View>
             </View>
             
             {activeGoal && (
               <View 
-                className="mt-4 p-3 rounded-xl"
-                style={{ backgroundColor: SQUID_COLORS.lightTeal + '20' }}
+                className="mt-4 p-3 rounded-2xl"
+                style={{ backgroundColor: THEME_COLORS.secondary + '20' }}
               >
-                <Text className="text-sm font-semibold mb-1" style={{ color: SQUID_COLORS.teal }}>
+                <Text className="text-sm font-semibold mb-1" style={{ color: THEME_COLORS.secondary }}>
                   🎯 Active Goal: {activeGoal.title}
                 </Text>
                 <View className="flex-row justify-between items-center">
-                  <View className="bg-gray-200 rounded-full h-2 flex-1 mr-3">
+                  <View className="bg-gray-700 rounded-full h-2 flex-1 mr-3">
                     <View 
                       className="h-2 rounded-full"
                       style={{ 
                         width: `${Math.min((activeGoal.currentAmount / activeGoal.targetAmount) * 100, 100)}%`,
-                        backgroundColor: SQUID_COLORS.teal
+                        backgroundColor: THEME_COLORS.secondary
                       }}
                     />
                   </View>
-                  <Text className="text-xs font-medium" style={{ color: SQUID_COLORS.teal }}>
+                  <Text className="text-xs font-medium" style={{ color: THEME_COLORS.secondary }}>
                     ${activeGoal.currentAmount.toFixed(0)}/${activeGoal.targetAmount.toFixed(0)}
                   </Text>
                 </View>
@@ -238,11 +250,11 @@ export default function DashboardScreen() {
           </View>
         </Animated.View>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Enhanced Design */}
         <Animated.View entering={FadeInUp.delay(200)} className="px-6 mb-6">
           <Text 
             className="text-lg font-bold mb-4"
-            style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+            style={{ color: THEME_COLORS.white }}
           >
             ⚡ Quick Actions
           </Text>
@@ -255,39 +267,52 @@ export default function DashboardScreen() {
               >
                 <Pressable
                   onPress={action.onPress}
-                  className="rounded-2xl overflow-hidden shadow-lg"
-                  style={{ height: 120 }}
+                  className="rounded-3xl overflow-hidden"
+                  style={{ 
+                    height: 140,
+                    shadowColor: action.colors[0],
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 16,
+                    elevation: 12
+                  }}
                 >
                   <LinearGradient
                     colors={action.colors}
-                    className="flex-1 p-4 justify-between"
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="flex-1 p-5 justify-between"
                   >
-                    <View className="flex-row justify-between items-start">
-                      <View className="flex-1">
-                        <Text className="text-white font-bold text-base mb-1">
-                          {action.title}
-                        </Text>
-                        <Text className="text-white opacity-90 text-xs">
-                          {action.subtitle}
-                        </Text>
-                      </View>
+                    {/* Icon at top */}
+                    <View className="self-start">
                       <View 
-                        className="w-8 h-8 rounded-full items-center justify-center"
+                        className="w-12 h-12 rounded-2xl items-center justify-center"
                         style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
                       >
                         <Ionicons 
                           name={action.icon as any} 
-                          size={16} 
+                          size={24} 
                           color="white" 
                         />
                       </View>
                     </View>
                     
-                    <View className="self-end">
+                    {/* Content at bottom */}
+                    <View>
+                      <Text className="text-white font-bold text-lg mb-1">
+                        {action.title}
+                      </Text>
+                      <Text className="text-white opacity-90 text-sm">
+                        {action.subtitle}
+                      </Text>
+                    </View>
+                    
+                    {/* Arrow indicator */}
+                    <View className="absolute top-4 right-4">
                       <Ionicons 
-                        name="arrow-forward-circle" 
-                        size={20} 
-                        color="rgba(255,255,255,0.8)" 
+                        name="arrow-forward" 
+                        size={18} 
+                        color="rgba(255,255,255,0.7)" 
                       />
                     </View>
                   </LinearGradient>
@@ -301,39 +326,59 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInUp.delay(300)} className="px-6 mb-6">
           <View className="flex-row justify-between">
             <View 
-              className="flex-1 mr-3 p-4 rounded-2xl items-center"
+              className="flex-1 mr-3 p-6 rounded-3xl items-center"
               style={{ 
-                backgroundColor: SQUID_COLORS.lightPink + '20',
-                borderWidth: 1,
-                borderColor: SQUID_COLORS.lightPink
+                backgroundColor: THEME_COLORS.surface,
+                shadowColor: THEME_COLORS.accent,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 6
               }}
             >
-              <Ionicons name="trophy" size={32} color={SQUID_COLORS.pink} />
+              <View 
+                className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
+                style={{ backgroundColor: THEME_COLORS.accent + '20' }}
+              >
+                <Ionicons name="trophy" size={28} color={THEME_COLORS.accent} />
+              </View>
               <Text 
-                className="text-2xl font-bold mt-2"
-                style={{ color: SQUID_COLORS.pink }}
+                className="text-2xl font-bold"
+                style={{ color: THEME_COLORS.accent }}
               >
                 {chorePoints}
               </Text>
-              <Text className="text-sm text-gray-600">Chore Points</Text>
+              <Text style={{ color: THEME_COLORS.gray, fontSize: 12 }}>
+                Chore Points
+              </Text>
             </View>
             
             <View 
-              className="flex-1 ml-3 p-4 rounded-2xl items-center"
+              className="flex-1 ml-3 p-6 rounded-3xl items-center"
               style={{ 
-                backgroundColor: SQUID_COLORS.lightTeal + '20',
-                borderWidth: 1,
-                borderColor: SQUID_COLORS.lightTeal
+                backgroundColor: THEME_COLORS.surface,
+                shadowColor: THEME_COLORS.secondary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 6
               }}
             >
-              <Ionicons name="time" size={32} color={SQUID_COLORS.teal} />
+              <View 
+                className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
+                style={{ backgroundColor: THEME_COLORS.secondary + '20' }}
+              >
+                <Ionicons name="time" size={28} color={THEME_COLORS.secondary} />
+              </View>
               <Text 
-                className="text-2xl font-bold mt-2"
-                style={{ color: SQUID_COLORS.teal }}
+                className="text-2xl font-bold"
+                style={{ color: THEME_COLORS.secondary }}
               >
                 {pendingChores}
               </Text>
-              <Text className="text-sm text-gray-600">Pending Tasks</Text>
+              <Text style={{ color: THEME_COLORS.gray, fontSize: 12 }}>
+                Pending Tasks
+              </Text>
             </View>
           </View>
         </Animated.View>
@@ -343,7 +388,7 @@ export default function DashboardScreen() {
           <Animated.View entering={FadeInUp.delay(400)} className="px-6 mb-6">
             <Text 
               className="text-lg font-bold mb-4"
-              style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+              style={{ color: THEME_COLORS.white }}
             >
               📊 Budget Status
             </Text>
@@ -354,37 +399,37 @@ export default function DashboardScreen() {
               return (
                 <View 
                   key={budget.id}
-                  className="p-4 rounded-xl mb-3"
+                  className="p-5 rounded-2xl mb-3"
                   style={{ 
-                    backgroundColor: isWarning ? SQUID_COLORS.lightPink + '20' : SQUID_COLORS.lightTeal + '20',
-                    borderWidth: 1,
-                    borderColor: isWarning ? SQUID_COLORS.lightPink : SQUID_COLORS.lightTeal
+                    backgroundColor: THEME_COLORS.surface,
+                    borderLeftWidth: 4,
+                    borderLeftColor: isWarning ? THEME_COLORS.error : THEME_COLORS.success
                   }}
                 >
-                  <View className="flex-row justify-between items-center mb-2">
+                  <View className="flex-row justify-between items-center mb-3">
                     <Text 
-                      className="font-semibold capitalize"
-                      style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+                      className="font-semibold capitalize text-lg"
+                      style={{ color: THEME_COLORS.white }}
                     >
                       {budget.category}
                     </Text>
                     <Text 
                       className="font-bold"
-                      style={{ color: isWarning ? SQUID_COLORS.pink : SQUID_COLORS.teal }}
+                      style={{ color: isWarning ? THEME_COLORS.error : THEME_COLORS.success }}
                     >
                       ${budget.spent.toFixed(0)}/${budget.limit.toFixed(0)}
                     </Text>
                   </View>
-                  <View className="bg-gray-200 rounded-full h-2">
+                  <View className="bg-gray-700 rounded-full h-3 mb-2">
                     <View 
-                      className="h-2 rounded-full"
+                      className="h-3 rounded-full"
                       style={{ 
                         width: `${percentage}%`,
-                        backgroundColor: isWarning ? SQUID_COLORS.pink : SQUID_COLORS.teal
+                        backgroundColor: isWarning ? THEME_COLORS.error : THEME_COLORS.success
                       }}
                     />
                   </View>
-                  <Text className="text-xs text-gray-500 mt-1">
+                  <Text style={{ color: THEME_COLORS.gray, fontSize: 12 }}>
                     {percentage.toFixed(0)}% used
                     {isWarning && ' ⚠️ Over threshold!'}
                   </Text>
@@ -394,37 +439,40 @@ export default function DashboardScreen() {
           </Animated.View>
         )}
 
-        {/* AI Assistant */}
+        {/* AI Assistant - Enhanced */}
         <Animated.View entering={FadeInDown.delay(500)} className="px-6 mb-6">
           <View 
-            className="rounded-2xl p-6"
+            className="rounded-3xl p-6"
             style={{ 
-              backgroundColor: isDark ? SQUID_COLORS.black : SQUID_COLORS.white,
-              borderWidth: 2,
-              borderColor: SQUID_COLORS.lightTeal
+              backgroundColor: THEME_COLORS.surface,
+              shadowColor: THEME_COLORS.primary,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.4,
+              shadowRadius: 16,
+              elevation: 10
             }}
           >
             <View className="flex-row items-center mb-4">
-              <View 
-                className="w-12 h-12 rounded-full items-center justify-center mr-4"
-                style={{ backgroundColor: SQUID_COLORS.lightTeal }}
+              <LinearGradient
+                colors={[THEME_COLORS.primary, THEME_COLORS.secondary]}
+                className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
               >
                 <Ionicons name="chatbubble-ellipses" size={24} color="white" />
-              </View>
+              </LinearGradient>
               <View className="flex-1">
                 <Text 
                   className="text-lg font-bold"
-                  style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+                  style={{ color: THEME_COLORS.white }}
                 >
                   AI Assistant
                 </Text>
-                <Text className="text-gray-500">
+                <Text style={{ color: THEME_COLORS.gray }}>
                   Ask me to add expenses, split bills, or get insights
                 </Text>
               </View>
               <Pressable
-                className="rounded-xl px-4 py-2"
-                style={{ backgroundColor: SQUID_COLORS.teal }}
+                className="rounded-2xl px-6 py-3"
+                style={{ backgroundColor: THEME_COLORS.primary }}
               >
                 <Text className="text-white font-semibold">Chat</Text>
               </Pressable>
