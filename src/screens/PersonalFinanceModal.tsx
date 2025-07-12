@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -29,6 +30,7 @@ const EXPENSE_CATEGORIES: ExpenseCategory[] = [
 ];
 
 export default function PersonalFinanceModal() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { currentUser, settings } = useUserStore();
@@ -96,7 +98,7 @@ export default function PersonalFinanceModal() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#F3F4F6' }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#F3F4F6', paddingTop: insets.top }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
         
         {/* Header */}

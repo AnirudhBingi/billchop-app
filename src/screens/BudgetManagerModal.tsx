@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +19,7 @@ const BUDGET_CATEGORIES: ExpenseCategory[] = [
 ];
 
 export default function BudgetManagerModal() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { currentUser, settings } = useUserStore();
   const { addBudget } = useExpenseStore();
@@ -76,7 +78,7 @@ export default function BudgetManagerModal() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#F3F4F6' }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#F3F4F6', paddingTop: insets.top }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
         
         {/* Header */}

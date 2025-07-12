@@ -21,6 +21,7 @@ import GroupDetailScreen from '../screens/GroupDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PersonalFinanceModal from '../screens/PersonalFinanceModal';
 import BudgetManagerModal from '../screens/BudgetManagerModal';
+import GoalManagerModal from '../screens/GoalManagerModal';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   Settings: undefined;
   PersonalFinance: { initialType?: 'income' | 'expense' };
   BudgetManager: undefined;
+  GoalManager: undefined;
 };
 
 export type TabParamList = {
@@ -195,6 +197,15 @@ export default function AppNavigator() {
           title: 'Budget Manager',
           presentation: 'formSheet',
           sheetAllowedDetents: [0.7, 1.0]
+        }}
+      />
+      <Stack.Screen 
+        name="GoalManager" 
+        component={GoalManagerModal}
+        options={{ 
+          title: 'Goal Manager',
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.8, 1.0]
         }}
       />
     </Stack.Navigator>

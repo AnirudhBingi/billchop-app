@@ -503,22 +503,14 @@ export default function PersonalScreen() {
                       Set financial goals to track your progress
                     </Text>
                     
-                    <View className="flex-row gap-2 flex-wrap justify-center">
-                      {[
-                        { title: 'Emergency Fund', amount: 5000, category: 'savings' },
-                        { title: 'New Laptop', amount: 1500, category: 'shopping' },
-                        { title: 'Vacation', amount: 3000, category: 'travel' }
-                      ].map(preset => (
-                        <Pressable
-                          key={preset.title}
-                          onPress={() => createQuickGoal(preset.title, preset.amount, preset.category)}
-                          className="bg-yellow-500 px-3 py-2 rounded-lg"
-                        >
-                          <Text className="text-white text-sm font-medium">
-                            {preset.title}
-                          </Text>
-                        </Pressable>
-                      ))}
+                    <Pressable
+                      onPress={() => navigation.navigate('GoalManager')}
+                      className="bg-yellow-500 px-6 py-3 rounded-xl self-center"
+                    >
+                      <Text className="text-white font-semibold">
+                        🎯 Create Your First Goal
+                      </Text>
+                    </Pressable>
                     </View>
                   </View>
                 </GlassCard>
