@@ -67,7 +67,6 @@ export default function AddChoreScreen() {
       groupId: selectedGroup,
       assignedTo,
       points: selectedDifficulty?.points || 15,
-      difficulty: difficulty as any,
       dueDate,
       isRecurring,
       status: 'pending',

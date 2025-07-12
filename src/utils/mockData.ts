@@ -179,6 +179,8 @@ export const mockPersonalExpenses: PersonalExpense[] = [
     type: 'income',
     date: new Date('2024-12-08'),
     isHomeCountry: false,
+    userId: 'user1',
+    createdAt: new Date('2024-12-08'),
   },
   {
     id: 'personal2',
@@ -190,6 +192,8 @@ export const mockPersonalExpenses: PersonalExpense[] = [
     type: 'expense',
     date: new Date('2024-12-11'),
     isHomeCountry: false,
+    userId: 'user1',
+    createdAt: new Date('2024-12-11'),
   },
   {
     id: 'personal3',
@@ -201,6 +205,8 @@ export const mockPersonalExpenses: PersonalExpense[] = [
     type: 'expense',
     date: new Date('2024-12-09'),
     isHomeCountry: false,
+    userId: 'user1',
+    createdAt: new Date('2024-12-09'),
   },
   {
     id: 'personal4',
@@ -212,6 +218,8 @@ export const mockPersonalExpenses: PersonalExpense[] = [
     type: 'income',
     date: new Date('2024-12-06'),
     isHomeCountry: false,
+    userId: 'user1',
+    createdAt: new Date('2024-12-06'),
   },
   {
     id: 'personal5',
@@ -223,6 +231,8 @@ export const mockPersonalExpenses: PersonalExpense[] = [
     type: 'expense',
     date: new Date('2024-12-01'),
     isHomeCountry: false,
+    userId: 'user1',
+    createdAt: new Date('2024-12-01'),
   },
 ];
 

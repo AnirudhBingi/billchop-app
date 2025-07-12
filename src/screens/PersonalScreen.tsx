@@ -439,7 +439,6 @@ export default function PersonalScreen() {
                         📊 Create Your First Budget
                       </Text>
                     </Pressable>
-                    </View>
                   </View>
                 </GlassCard>
               )}

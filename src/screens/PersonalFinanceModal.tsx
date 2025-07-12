@@ -60,7 +60,8 @@ export default function PersonalFinanceModal() {
       type: selectedType,
       date: new Date(),
       createdAt: new Date(),
-      userId: currentUser?.id || ''
+      userId: currentUser?.id || '',
+      isHomeCountry: false // TODO: Make this dynamic based on selected mode
     };
 
     addPersonalExpense(personalExpense);
