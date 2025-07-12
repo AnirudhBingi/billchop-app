@@ -307,28 +307,16 @@ export default function PersonalScreen() {
                 {currentCurrency.symbol} {currentCurrency.code} • {selectedMode === 'local' ? 'Where you live' : 'Your home country'}
               </Text>
             </View>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Pressable
-                onPress={() => navigation.navigate('PersonalFinance')}
-                style={{ 
-                  padding: 8, 
-                  borderRadius: 8, 
-                  backgroundColor: '#10B981'
-                }}
-              >
-                <Ionicons name="add" size={20} color="white" />
-              </Pressable>
-              <Pressable
-                onPress={() => setSelectedMode('selection')}
-                style={{ 
-                  padding: 8, 
-                  borderRadius: 8, 
-                  backgroundColor: selectedMode === 'local' ? '#3B82F6' : '#10B981' 
-                }}
-              >
-                <Ionicons name="swap-horizontal" size={20} color="white" />
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={() => setSelectedMode('selection')}
+              style={{ 
+                padding: 8, 
+                borderRadius: 8, 
+                backgroundColor: selectedMode === 'local' ? '#3B82F6' : '#10B981' 
+              }}
+            >
+              <Ionicons name="swap-horizontal" size={20} color="white" />
+            </Pressable>
           </View>
 
           {/* Quick Actions */}
@@ -353,7 +341,7 @@ export default function PersonalScreen() {
             </Text>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <Pressable
-                onPress={() => navigation.navigate('PersonalFinance')}
+                onPress={() => navigation.navigate('PersonalFinance', { initialType: 'income' })}
                 style={{
                   flex: 1, 
                   padding: 16, 
@@ -369,7 +357,7 @@ export default function PersonalScreen() {
               </Pressable>
               
               <Pressable
-                onPress={() => navigation.navigate('PersonalFinance')}
+                onPress={() => navigation.navigate('PersonalFinance', { initialType: 'expense' })}
                 style={{
                   flex: 1, 
                   padding: 16, 
@@ -403,7 +391,7 @@ export default function PersonalScreen() {
                   Income
                 </Text>
                 <Text className="text-lg font-bold text-green-500">
-                  {currentCurrency.symbol}2,450
+                  {currentCurrency.symbol}{totalIncome.toFixed(2)}
                 </Text>
               </View>
               <View className="flex-1 items-center py-3 bg-red-500/10">
@@ -414,7 +402,7 @@ export default function PersonalScreen() {
                   Expenses
                 </Text>
                 <Text className="text-lg font-bold text-red-500">
-                  {currentCurrency.symbol}1,890
+                  {currentCurrency.symbol}{totalExpenses.toFixed(2)}
                 </Text>
               </View>
               <View className="flex-1 items-center py-3 bg-blue-500/10 rounded-r-xl">
@@ -424,8 +412,11 @@ export default function PersonalScreen() {
                 )}>
                   Balance
                 </Text>
-                <Text className="text-lg font-bold text-blue-500">
-                  {currentCurrency.symbol}560
+                <Text className={cn(
+                  "text-lg font-bold",
+                  netBalance >= 0 ? "text-blue-500" : "text-red-500"
+                )}>
+                  {currentCurrency.symbol}{netBalance.toFixed(2)}
                 </Text>
               </View>
             </View>

@@ -32,7 +32,7 @@ export type RootStackParamList = {
   AddChore: { groupId?: string };
   GroupDetail: { groupId: string };
   Settings: undefined;
-  PersonalFinance: undefined;
+  PersonalFinance: { initialType?: 'income' | 'expense' };
 };
 
 export type TabParamList = {

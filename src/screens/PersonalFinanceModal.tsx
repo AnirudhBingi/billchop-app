@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
@@ -11,6 +11,7 @@ import { Picker } from '@react-native-picker/picker';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type RouteProp = NativeStackScreenProps<RootStackParamList, 'PersonalFinance'>['route'];
 
 const INCOME_CATEGORIES = [
   'salary',
@@ -29,12 +30,14 @@ const EXPENSE_CATEGORIES: ExpenseCategory[] = [
 
 export default function PersonalFinanceModal() {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProp>();
   const { currentUser, settings } = useUserStore();
   const { addPersonalExpense } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
+  const initialType = route.params?.initialType || 'expense';
   
-  const [selectedType, setSelectedType] = useState<'income' | 'expense'>('expense');
+  const [selectedType, setSelectedType] = useState<'income' | 'expense'>(initialType);
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
