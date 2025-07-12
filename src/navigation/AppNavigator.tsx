@@ -43,7 +43,6 @@ export type RootStackParamList = {
   CreateRide: undefined;
   RideLog: undefined;
   AIChat: undefined;
-  AIChat: undefined;
 };
 
 export type TabParamList = {

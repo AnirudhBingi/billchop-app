@@ -3,6 +3,8 @@ export interface User {
   name: string;
   email: string;
   profilePicture?: string;
+  phoneNumber?: string;
+  avatar?: string;
   createdAt: Date;
 }
 
@@ -62,6 +64,8 @@ export interface Chore {
   isRecurring: boolean;
   recurringPattern?: 'daily' | 'weekly' | 'monthly';
   status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+  createdBy: string;
+  createdAt: Date;
 }
 
 export interface ChoreLeaderboard {
