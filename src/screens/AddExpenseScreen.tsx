@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, Alert, Switch } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
-import GlassCard from '../components/GlassCard';
 import AnimatedButton from '../components/AnimatedButton';
-import { Expense, ExpenseCategory, User, PersonalExpense } from '../types';
+import { Expense, ExpenseCategory, User } from '../types';
 import { Picker } from '@react-native-picker/picker';
-import { cn } from '../utils/cn';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddExpense'>;
 type RouteProp_AddExpense = RouteProp<RootStackParamList, 'AddExpense'>;
@@ -172,8 +169,10 @@ export default function AddExpenseScreen() {
     >
       <ScrollView 
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true}
       >
         {/* Split With Section */}
         <View style={{
@@ -260,24 +259,32 @@ export default function AddExpenseScreen() {
         </View>
 
         {/* Expense Details */}
-        <GlassCard className="mb-4">
-          <Text className={cn(
-            "text-lg font-semibold mb-4",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            Expense Details
-          </Text>
-          <Text className={cn(
-            "text-lg font-semibold mb-4",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
+        <View style={{
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          shadowColor: isDark ? '#FFFFFF' : '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}>
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: '600', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 16 
+          }}>
             Expense Details
           </Text>
           
-          <Text className={cn(
-            "text-sm font-medium mb-2",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
+          <Text style={{ 
+            fontSize: 14, 
+            fontWeight: '500', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 8 
+          }}>
             What did you spend on? *
           </Text>
           <TextInput
@@ -285,16 +292,24 @@ export default function AddExpenseScreen() {
             onChangeText={setTitle}
             placeholder="e.g., Grocery shopping, Dinner, Uber ride"
             placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-            className={cn(
-              "p-3 rounded-xl mb-4 text-base",
-              isDark ? "bg-gray-700 text-white border border-gray-600" : "bg-white text-gray-900 border border-gray-200"
-            )}
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              marginBottom: 16,
+              fontSize: 16,
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              color: isDark ? '#FFFFFF' : '#111827',
+              borderWidth: 1,
+              borderColor: isDark ? '#6B7280' : '#E5E7EB'
+            }}
           />
           
-          <Text className={cn(
-            "text-sm font-medium mb-2",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
+          <Text style={{ 
+            fontSize: 14, 
+            fontWeight: '500', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 8 
+          }}>
             Amount * ({settings.primaryCurrency})
           </Text>
           <TextInput
@@ -303,16 +318,25 @@ export default function AddExpenseScreen() {
             placeholder="0.00"
             keyboardType="decimal-pad"
             placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-            className={cn(
-              "p-3 rounded-xl mb-4 text-base font-semibold",
-              isDark ? "bg-gray-700 text-white border border-gray-600" : "bg-white text-gray-900 border border-gray-200"
-            )}
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              marginBottom: 16,
+              fontSize: 16,
+              fontWeight: '600',
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              color: isDark ? '#FFFFFF' : '#111827',
+              borderWidth: 1,
+              borderColor: isDark ? '#6B7280' : '#E5E7EB'
+            }}
           />
           
-          <Text className={cn(
-            "text-sm font-medium mb-2",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
+          <Text style={{ 
+            fontSize: 14, 
+            fontWeight: '500', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 8 
+          }}>
             Description (Optional)
           </Text>
           <TextInput
@@ -320,28 +344,51 @@ export default function AddExpenseScreen() {
             onChangeText={setDescription}
             placeholder="Add a note about this expense"
             multiline
-            numberOfLines={2}
+            numberOfLines={3}
             placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
-            className={cn(
-              "p-3 rounded-xl mb-4 text-base",
-              isDark ? "bg-gray-700 text-white border border-gray-600" : "bg-white text-gray-900 border border-gray-200"
-            )}
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              marginBottom: 16,
+              fontSize: 16,
+              height: 80,
+              textAlignVertical: 'top',
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              color: isDark ? '#FFFFFF' : '#111827',
+              borderWidth: 1,
+              borderColor: isDark ? '#6B7280' : '#E5E7EB'
+            }}
           />
-        </GlassCard>
+        </View>
 
         {/* Category */}
-        <GlassCard className="mb-4">
-          <Text className={cn(
-            "text-lg font-semibold mb-4",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
+        <View style={{
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          shadowColor: isDark ? '#FFFFFF' : '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}>
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: '600', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 16 
+          }}>
             Category
           </Text>
           
-          <View className={cn(
-            "rounded-xl overflow-hidden",
-            isDark ? "bg-gray-700 border border-gray-600" : "bg-white border border-gray-200"
-          )}>
+          <View style={{
+            borderRadius: 12,
+            overflow: 'hidden',
+            backgroundColor: isDark ? '#374151' : '#FFFFFF',
+            borderWidth: 1,
+            borderColor: isDark ? '#6B7280' : '#E5E7EB'
+          }}>
             <Picker
               selectedValue={category}
               onValueChange={setCategory}
@@ -359,21 +406,36 @@ export default function AddExpenseScreen() {
               ))}
             </Picker>
           </View>
-        </GlassCard>
+        </View>
 
         {/* Who Paid */}
-        <GlassCard className="mb-4">
-          <Text className={cn(
-            "text-lg font-semibold mb-4",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
+        <View style={{
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          shadowColor: isDark ? '#FFFFFF' : '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}>
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: '600', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 16 
+          }}>
             Who paid?
           </Text>
           
-          <View className={cn(
-            "rounded-xl overflow-hidden",
-            isDark ? "bg-gray-700 border border-gray-600" : "bg-white border border-gray-200"
-          )}>
+          <View style={{
+            borderRadius: 12,
+            overflow: 'hidden',
+            backgroundColor: isDark ? '#374151' : '#FFFFFF',
+            borderWidth: 1,
+            borderColor: isDark ? '#6B7280' : '#E5E7EB'
+          }}>
             <Picker
               selectedValue={selectedPayer}
               onValueChange={setSelectedPayer}
@@ -387,63 +449,99 @@ export default function AddExpenseScreen() {
               ))}
             </Picker>
           </View>
-        </GlassCard>
+        </View>
 
         {/* Split Between */}
-        <GlassCard className="mb-4">
-          <Text className={cn(
-            "text-lg font-semibold mb-4",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
+        <View style={{
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          shadowColor: isDark ? '#FFFFFF' : '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}>
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: '600', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 16 
+          }}>
             Split between ({selectedSplitters.length} people)
           </Text>
           
           {safeAvailableUsers.map(user => (
             <SplitterItem key={user.id} user={user} />
           ))}
-        </GlassCard>
+        </View>
 
         {/* Draft Toggle */}
-        <GlassCard className="mb-6">
+        <View style={{
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 24,
+          shadowColor: isDark ? '#FFFFFF' : '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}>
           <Pressable
             onPress={() => setIsDraft(!isDraft)}
-            className="flex-row items-center justify-between"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
           >
             <View>
-              <Text className={cn(
-                "font-semibold",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
+              <Text style={{
+                fontWeight: '600',
+                color: isDark ? '#FFFFFF' : '#111827'
+              }}>
                 Save as Draft
               </Text>
-              <Text className={cn(
-                "text-sm opacity-70",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
+              <Text style={{
+                fontSize: 14,
+                opacity: 0.7,
+                color: isDark ? '#FFFFFF' : '#111827'
+              }}>
                 Don't notify others yet
               </Text>
             </View>
             <Ionicons
               name={isDraft ? "toggle" : "toggle-outline"}
               size={32}
-              color={isDraft ? "#3B82F6" : isDark ? "#6B7280" : "#9CA3AF"}
+              color={isDraft ? "#3B82F6" : "#9CA3AF"}
             />
           </Pressable>
-        </GlassCard>
+        </View>
       </ScrollView>
 
       {/* Bottom Actions */}
-      <View className="p-4 pt-2">
-        <View className="flex-row space-x-3">
+      <View style={{ 
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 16,
+        backgroundColor: isDark ? '#111827' : '#F9FAFB',
+        borderTopWidth: 1,
+        borderTopColor: isDark ? '#374151' : '#E5E7EB'
+      }}>
+        <View style={{ flexDirection: 'row' }}>
           <AnimatedButton
             title="Cancel"
             variant="outline"
-            className="flex-1"
+            className="flex-1 mr-2"
             onPress={() => navigation.goBack()}
           />
           <AnimatedButton
             title={isDraft ? "Save Draft" : "Split Bill"}
-            className="flex-1"
+            className="flex-1 ml-2"
             onPress={handleSave}
           />
         </View>
