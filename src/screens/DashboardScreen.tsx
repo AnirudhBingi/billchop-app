@@ -583,18 +583,7 @@ export default function DashboardScreen() {
         className="absolute bottom-20 right-6"
       >
         <Pressable
-          onPress={() => {
-            // Open AI Chat functionality
-            Alert.alert(
-              '🤖 AI Assistant', 
-              'Hi! I can help you:\n\n• Add new expenses\n• Split bills with friends\n• Get spending insights\n• Log rides\n• Set budgets and goals\n\nWhat would you like to do?',
-              [
-                { text: 'Add Expense', onPress: () => navigation.navigate('SplitBill') },
-                { text: 'Get Insights', onPress: () => navigation.navigate('Analytics') },
-                { text: 'Chat Later', style: 'cancel' }
-              ]
-            );
-          }}
+          onPress={() => navigation.navigate('AIChat')}
           className="rounded-full p-4"
           style={{ 
             shadowColor: '#000',
