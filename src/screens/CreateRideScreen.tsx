@@ -355,7 +355,7 @@ export default function CreateRideScreen() {
                   }}
                 />
               </View>
-            </div>
+            </View>
           )}
         </Animated.View>
 
