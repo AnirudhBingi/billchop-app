@@ -328,7 +328,13 @@ export default function DashboardScreen() {
               {favoriteRiders.slice(0, 3).map((rider, index) => (
                 <Pressable
                   key={rider.id}
-                  onPress={() => {/* Create ride with this person */}}
+                  onPress={() => {
+                    // One-tap ride creation with this favorite rider
+                    navigation.navigate('CreateRide', { 
+                      selectedPassenger: rider.id,
+                      rideDescription: rider.lastRide 
+                    });
+                  }}
                   className="items-center flex-1"
                 >
                   <View 

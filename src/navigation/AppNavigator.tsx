@@ -23,6 +23,7 @@ import PersonalFinanceModal from '../screens/PersonalFinanceModal';
 import BudgetManagerModal from '../screens/BudgetManagerModal';
 import GoalManagerModal from '../screens/GoalManagerModal';
 import CreateRideScreen from '../screens/CreateRideScreen';
+import RideLogScreen from '../screens/RideLogScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -216,6 +217,14 @@ export default function AppNavigator() {
         component={CreateRideScreen}
         options={{ 
           title: 'Log Ride',
+          headerShown: false
+        }}
+      />
+      <Stack.Screen 
+        name="RideLog" 
+        component={RideLogScreen}
+        options={{ 
+          title: 'Ride History',
           headerShown: false
         }}
       />

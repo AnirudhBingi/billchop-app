@@ -374,46 +374,109 @@ export default function CreateRideScreen() {
             borderColor: THEME_COLORS.border
           }}
         >
-          <Text className="text-lg font-bold mb-4" style={{ color: THEME_COLORS.text }}>
-            Select Passengers ({selectedPassengers.length})
-          </Text>
-          
-          {friends.map(friend => (
-            <Pressable
-              key={friend.id}
-              onPress={() => togglePassenger(friend.id)}
-              className="flex-row items-center justify-between py-3 border-b"
-              style={{ borderColor: THEME_COLORS.divider }}
-            >
-              <View className="flex-row items-center flex-1">
-                <View 
-                  className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                  style={{ backgroundColor: THEME_COLORS.primary }}
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-lg font-bold" style={{ color: THEME_COLORS.text }}>
+              Select Passengers ({selectedPassengers.length})
+            </Text>
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => navigation.navigate('AddFriend')}
+                className="flex-row items-center rounded-lg px-3 py-2"
+                style={{ backgroundColor: THEME_COLORS.surface }}
+              >
+                <Ionicons name="person-add" size={16} color={THEME_COLORS.primary} />
+                <Text 
+                  className="ml-1 text-sm font-medium"
+                  style={{ color: THEME_COLORS.primary }}
                 >
-                  <Text className="text-white font-bold">
-                    {friend.name.charAt(0)}
+                  Add Friend
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  // Invite from contacts functionality
+                  Alert.alert('Invite Friends', 'This feature will allow you to invite friends from your contacts to join BillChop.');
+                }}
+                className="flex-row items-center rounded-lg px-3 py-2"
+                style={{ backgroundColor: THEME_COLORS.secondary + '15' }}
+              >
+                <Ionicons name="mail" size={16} color={THEME_COLORS.secondary} />
+                <Text 
+                  className="ml-1 text-sm font-medium"
+                  style={{ color: THEME_COLORS.secondary }}
+                >
+                  Invite
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+          
+          {friends.length > 0 ? (
+            friends.map(friend => (
+              <Pressable
+                key={friend.id}
+                onPress={() => togglePassenger(friend.id)}
+                className="flex-row items-center justify-between py-3 border-b"
+                style={{ borderColor: THEME_COLORS.divider }}
+              >
+                <View className="flex-row items-center flex-1">
+                  <View 
+                    className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                    style={{ backgroundColor: THEME_COLORS.primary }}
+                  >
+                    <Text className="text-white font-bold">
+                      {friend.name.charAt(0)}
+                    </Text>
+                  </View>
+                  <Text 
+                    className="font-medium"
+                    style={{ color: THEME_COLORS.text }}
+                  >
+                    {friend.name}
                   </Text>
                 </View>
-                <Text 
-                  className="font-medium"
-                  style={{ color: THEME_COLORS.text }}
+                <View 
+                  className="w-6 h-6 rounded-full border-2 items-center justify-center"
+                  style={{ 
+                    borderColor: selectedPassengers.includes(friend.id) ? THEME_COLORS.primary : THEME_COLORS.border,
+                    backgroundColor: selectedPassengers.includes(friend.id) ? THEME_COLORS.primary : 'transparent'
+                  }}
                 >
-                  {friend.name}
-                </Text>
-              </View>
+                  {selectedPassengers.includes(friend.id) && (
+                    <Ionicons name="checkmark" size={14} color="white" />
+                  )}
+                </View>
+              </Pressable>
+            ))
+          ) : (
+            <View className="items-center py-8">
               <View 
-                className="w-6 h-6 rounded-full border-2 items-center justify-center"
-                style={{ 
-                  borderColor: selectedPassengers.includes(friend.id) ? THEME_COLORS.primary : THEME_COLORS.border,
-                  backgroundColor: selectedPassengers.includes(friend.id) ? THEME_COLORS.primary : 'transparent'
-                }}
+                className="w-16 h-16 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: THEME_COLORS.surface }}
               >
-                {selectedPassengers.includes(friend.id) && (
-                  <Ionicons name="checkmark" size={14} color="white" />
-                )}
+                <Ionicons name="people-outline" size={32} color={THEME_COLORS.textLight} />
               </View>
-            </Pressable>
-          ))}
+              <Text 
+                className="text-center font-medium mb-2"
+                style={{ color: THEME_COLORS.text }}
+              >
+                No friends added yet
+              </Text>
+              <Text 
+                className="text-center text-sm mb-4"
+                style={{ color: THEME_COLORS.textSecondary }}
+              >
+                Add friends to split ride costs with them
+              </Text>
+              <Pressable
+                onPress={() => navigation.navigate('AddFriend')}
+                className="rounded-xl px-4 py-2"
+                style={{ backgroundColor: THEME_COLORS.primary }}
+              >
+                <Text className="text-white font-semibold">Add Your First Friend</Text>
+              </Pressable>
+            </View>
+          )}
         </Animated.View>
 
         {/* Cost Summary */}
