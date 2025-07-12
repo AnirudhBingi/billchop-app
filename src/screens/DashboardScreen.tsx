@@ -174,7 +174,7 @@ export default function DashboardScreen() {
             <QuickActionCard
               title="Split Bill"
               icon="people-outline"
-              onPress={() => navigation.navigate('AddExpense', {})}
+              onPress={() => navigation.navigate('AddSharedExpense', {})}
               color="#3B82F6"
             />
             <QuickActionCard

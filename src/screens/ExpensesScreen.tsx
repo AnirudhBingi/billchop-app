@@ -284,7 +284,7 @@ export default function ExpensesScreen() {
             title="Split Bill"
             size="sm"
             icon={<Ionicons name="add" size={16} color="white" style={{ marginRight: 4 }} />}
-            onPress={() => navigation.navigate('AddExpense', {})}
+            onPress={() => navigation.navigate('AddSharedExpense', {})}
           />
         </View>
 
@@ -544,7 +544,7 @@ export default function ExpensesScreen() {
                     <AnimatedButton
                       title="Split a Bill"
                       size="sm"
-                      onPress={() => navigation.navigate('AddExpense', {})}
+                      onPress={() => navigation.navigate('AddSharedExpense', {})}
                     />
                   </View>
                 </View>

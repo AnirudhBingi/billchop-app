@@ -15,10 +15,12 @@ import AddChoreScreen from '../screens/AddChoreScreen';
 import GroupDetailScreen from '../screens/GroupDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PersonalFinanceModal from '../screens/PersonalFinanceModal';
+import AddSharedExpenseScreen from '../screens/AddSharedExpenseScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
   AddExpense: { groupId?: string; isPersonal?: boolean; isIncome?: boolean };
+  AddSharedExpense: { groupId?: string };
   AddChore: { groupId?: string };
   GroupDetail: { groupId: string };
   Settings: undefined;
@@ -114,6 +116,15 @@ export default function AppNavigator() {
           title: 'Add Expense',
           presentation: 'formSheet',
           sheetAllowedDetents: [0.7, 1.0]
+        }}
+      />
+      <Stack.Screen 
+        name="AddSharedExpense" 
+        component={AddSharedExpenseScreen}
+        options={{ 
+          title: 'Split Bill',
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.8, 1.0]
         }}
       />
       <Stack.Screen 
