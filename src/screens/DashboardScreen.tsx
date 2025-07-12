@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -8,331 +8,429 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import { useChoreStore } from '../state/useChoreStore';
-import GlassCard from '../components/GlassCard';
-import AnimatedButton from '../components/AnimatedButton';
 import { mockUsers, mockGroups, mockExpenses, mockChores, mockPersonalExpenses } from '../utils/mockData';
 import { cn } from '../utils/cn';
+import Animated, { FadeInUp, FadeInDown, BounceIn } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Squid Game Color Palette
+const SQUID_COLORS = {
+  pink: '#E91E63',
+  lightPink: '#F7B5CA',
+  teal: '#16A085',
+  lightTeal: '#00BCD4',
+  black: '#212121',
+  white: '#FFFFFF',
+  darkPink: '#C2185B',
+  darkTeal: '#138D75'
+};
+
+const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { currentUser, settings } = useUserStore();
-  const { expenses, personalExpenses, getTotalOwed, getTotalOwing } = useExpenseStore();
+  const { currentUser, settings, friends } = useUserStore();
+  const { expenses, personalExpenses, budgets, financialGoals, getTotalOwed, getTotalOwing } = useExpenseStore();
   const { chores, getUserPoints } = useChoreStore();
   
   const isDark = settings.theme === 'dark';
-  
+  const userId = currentUser?.id || '';
+
   // Initialize mock data for demo
   useEffect(() => {
     if (!currentUser) {
-      // Set current user
       useUserStore.getState().setCurrentUser(mockUsers[0]);
-      
-      // Add friends
       mockUsers.slice(1).forEach(user => {
         useUserStore.getState().addFriend(user);
       });
-      
-      // Add groups
       mockGroups.forEach(group => {
         useExpenseStore.getState().addGroup(group);
       });
-      
-      // Add expenses
       mockExpenses.forEach(expense => {
         useExpenseStore.getState().addExpense(expense);
       });
-      
-      // Add chores
       mockChores.forEach(chore => {
         useChoreStore.getState().addChore(chore);
       });
-      
-      // Add personal expenses
       mockPersonalExpenses.forEach(expense => {
         useExpenseStore.getState().addPersonalExpense(expense);
       });
-      
-      // Update leaderboard
-      useChoreStore.getState().updateLeaderboard();
     }
   }, [currentUser]);
 
-  const totalOwed = currentUser ? getTotalOwed(currentUser.id) : 0;
-  const totalOwing = currentUser ? getTotalOwing(currentUser.id) : 0;
-  const userPoints = currentUser ? getUserPoints(currentUser.id) : 0;
-  const pendingChores = chores.filter(c => c.status === 'pending').length;
-  const recentExpenses = expenses.slice(0, 3);
+  // Calculate financial data
+  const userPersonalExpenses = personalExpenses.filter(e => e.userId === userId);
+  const totalIncome = userPersonalExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = userPersonalExpenses.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+  const netBalance = totalIncome - totalExpenses;
+  
+  const userBudgets = budgets.filter(b => b.userId === userId && b.isActive);
+  const userGoals = financialGoals.filter(g => g.userId === userId && !g.isCompleted);
+  const activeGoal = userGoals.sort((a, b) => b.priority === 'high' ? 1 : -1)[0];
+  
+  const totalOwed = getTotalOwed(userId);
+  const totalOwing = getTotalOwing(userId);
+  const chorePoints = getUserPoints(userId);
+  const pendingChores = chores.filter(c => c.assignedTo === userId && c.status === 'pending').length;
 
-  const QuickActionCard = ({ title, icon, onPress, color = "#3B82F6" }: {
-    title: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    onPress: () => void;
-    color?: string;
-  }) => (
-    <Pressable onPress={onPress} className="flex-1">
-      <GlassCard className="items-center justify-center h-20 mx-1">
-        <Ionicons 
-          name={icon} 
-          size={20} 
-          color={color} 
-        />
-        <Text className={cn(
-          "text-xs font-medium mt-1 text-center",
-          isDark ? "text-white" : "text-gray-900"
-        )}>
-          {title}
-        </Text>
-      </GlassCard>
-    </Pressable>
-  );
+  // Quick Action Data with Squid Game styling
+  const quickActions = [
+    {
+      id: 'smart-split',
+      title: 'Smart Split',
+      subtitle: '📸 Scan & Split',
+      icon: 'camera',
+      colors: [SQUID_COLORS.pink, SQUID_COLORS.darkPink],
+      onPress: () => navigation.navigate('SplitBill')
+    },
+    {
+      id: 'ai-analytics',
+      title: 'AI Analytics',
+      subtitle: '🧠 Smart Insights',
+      icon: 'analytics',
+      colors: [SQUID_COLORS.teal, SQUID_COLORS.darkTeal],
+      onPress: () => navigation.navigate('Analytics')
+    },
+    {
+      id: 'split-bill',
+      title: 'Split Bill',
+      subtitle: '👥 Group Expense',
+      icon: 'people',
+      colors: [SQUID_COLORS.lightPink, SQUID_COLORS.pink],
+      onPress: () => navigation.navigate('SplitBill')
+    },
+    {
+      id: 'personal',
+      title: 'Personal',
+      subtitle: '💰 My Finances',
+      icon: 'wallet',
+      colors: [SQUID_COLORS.lightTeal, SQUID_COLORS.teal],
+      onPress: () => navigation.navigate('MainTabs', { screen: 'Personal' })
+    },
+    {
+      id: 'add-chore',
+      title: 'Add Chore',
+      subtitle: '✅ Create Task',
+      icon: 'checkmark-circle',
+      colors: [SQUID_COLORS.pink, SQUID_COLORS.darkPink],
+      onPress: () => navigation.navigate('AddChore')
+    }
+  ];
 
   return (
     <View 
-      className={cn(
-        "flex-1",
-        isDark ? "bg-gray-900" : "bg-gray-50"
-      )}
-      style={{ paddingTop: insets.top }}
+      className="flex-1"
+      style={{ 
+        backgroundColor: isDark ? SQUID_COLORS.black : '#F8FAFC',
+        paddingTop: insets.top 
+      }}
     >
       <ScrollView 
-        className="flex-1"
-        contentContainerStyle={{ padding: 16 }}
+        className="flex-1" 
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* Header */}
-        <View className="flex-row items-center justify-between mb-6">
-          <View>
-            <Text className={cn(
-              "text-2xl font-bold",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
-              Welcome back,
-            </Text>
-            <Text className={cn(
-              "text-2xl font-bold text-blue-500"
-            )}>
-              {currentUser?.name || 'Student'}!
-            </Text>
-          </View>
-          <Pressable onPress={() => navigation.navigate('Settings')}>
-            <Ionicons 
-              name="settings-outline" 
-              size={24} 
-              color={isDark ? "#FFFFFF" : "#111827"} 
-            />
-          </Pressable>
-        </View>
-
-        {/* Balance Overview */}
-        <GlassCard className="mb-6">
-          <Text className={cn(
-            "text-lg font-semibold mb-4",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            Balance Overview
-          </Text>
-          <View className="flex-row justify-between">
+        <Animated.View 
+          entering={FadeInUp}
+          className="px-6 py-6"
+        >
+          <View className="flex-row items-center justify-between mb-2">
             <View className="flex-1">
-              <Text className={cn(
-                "text-sm opacity-70",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                You owe
-              </Text>
-              <Text className="text-2xl font-bold text-red-500">
-                ${totalOwing.toFixed(2)}
+              <Text className="text-lg text-gray-600">Welcome back,</Text>
+              <Text 
+                className="text-2xl font-bold"
+                style={{ color: SQUID_COLORS.pink }}
+              >
+                {currentUser?.name || 'Alex Student'}!
               </Text>
             </View>
-            <View className="flex-1 items-end">
-              <Text className={cn(
-                "text-sm opacity-70",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                You're owed
-              </Text>
-              <Text className="text-2xl font-bold text-green-500">
-                ${totalOwed.toFixed(2)}
-              </Text>
-            </View>
-          </View>
-        </GlassCard>
-
-        {/* Quick Actions */}
-        <GlassCard className="mb-6">
-          <Text className={cn(
-            "text-lg font-semibold mb-4",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            Quick Actions
-          </Text>
-          
-          {/* First Row - Revolutionary Features */}
-          <View className="flex-row mb-3">
-            <QuickActionCard
-              title="📸 Smart Split"
-              icon="camera-outline"
-              onPress={() => navigation.navigate('SplitBill')}
-              color="#EF4444"
-            />
-            <QuickActionCard
-              title="🧠 AI Analytics"
-              icon="analytics-outline"
-              onPress={() => navigation.navigate('Analytics')}
-              color="#8B5CF6"
-            />
-          </View>
-          
-          {/* Second Row - Core Functions */}
-          <View className="flex-row mb-3">
-            <QuickActionCard
-              title="Split Bill"
-              icon="people-outline"
-              onPress={() => navigation.navigate('SplitBill')}
-              color="#3B82F6"
-            />
-            <QuickActionCard
-              title="Personal"
-              icon="wallet-outline"
-              onPress={() => navigation.navigate('PersonalFinance')}
-              color="#F59E0B"
-            />
-          </View>
-          
-          {/* Third Row - Chores */}
-          <View className="flex-row">
-            <QuickActionCard
-              title="Add Chore"
-              icon="checkmark-circle-outline"
-              onPress={() => navigation.navigate('AddChore', {})}
-              color="#8B5CF6"
-            />
-            <View className="flex-1 mx-1">
-              {/* Empty space for visual balance */}
-            </View>
-          </View>
-        </GlassCard>
-
-        {/* Stats Cards */}
-        <View className="flex-row mb-6">
-          <GlassCard className="flex-1 mr-2">
-            <View className="items-center">
-              <Ionicons name="trophy-outline" size={24} color="#F59E0B" />
-              <Text className={cn(
-                "text-sm opacity-70 mt-2",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                Chore Points
-              </Text>
-              <Text className={cn(
-                "text-xl font-bold",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                {userPoints}
-              </Text>
-            </View>
-          </GlassCard>
-          
-          <GlassCard className="flex-1 ml-2">
-            <View className="items-center">
-              <Ionicons name="time-outline" size={24} color="#EF4444" />
-              <Text className={cn(
-                "text-sm opacity-70 mt-2",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                Pending Chores
-              </Text>
-              <Text className={cn(
-                "text-xl font-bold",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                {pendingChores}
-              </Text>
-            </View>
-          </GlassCard>
-        </View>
-
-        {/* Recent Activity */}
-        <GlassCard className="mb-6">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className={cn(
-              "text-lg font-semibold",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
-              Recent Expenses
-            </Text>
-            <Pressable onPress={() => navigation.navigate('MainTabs')}>
-              <Text className="text-blue-500 font-medium">View All</Text>
+            <Pressable
+              onPress={() => navigation.navigate('Settings')}
+              className="p-3 rounded-full"
+              style={{ backgroundColor: SQUID_COLORS.lightPink + '20' }}
+            >
+              <Ionicons name="settings" size={24} color={SQUID_COLORS.pink} />
             </Pressable>
           </View>
-          
-          {recentExpenses.length > 0 ? (
-            recentExpenses.map((expense) => (
-              <View key={expense.id} className="flex-row items-center justify-between py-3 border-b border-gray-200/20">
-                <View className="flex-1">
-                  <Text className={cn(
-                    "font-medium",
-                    isDark ? "text-white" : "text-gray-900"
-                  )}>
-                    {expense.title}
-                  </Text>
-                  <Text className={cn(
-                    "text-sm opacity-70",
-                    isDark ? "text-white" : "text-gray-900"
-                  )}>
-                    {expense.category}
-                  </Text>
-                </View>
-                <Text className={cn(
-                  "font-semibold",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  ${expense.amount.toFixed(2)}
+        </Animated.View>
+
+        {/* Financial Overview Widget */}
+        <Animated.View entering={FadeInUp.delay(100)} className="px-6 mb-6">
+          <Text 
+            className="text-lg font-bold mb-4"
+            style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+          >
+            💰 Financial Overview
+          </Text>
+          <View 
+            className="rounded-2xl p-6 shadow-lg"
+            style={{ 
+              backgroundColor: isDark ? SQUID_COLORS.black : SQUID_COLORS.white,
+              borderWidth: 2,
+              borderColor: SQUID_COLORS.lightPink
+            }}
+          >
+            <View className="flex-row justify-between mb-4">
+              <View className="items-center flex-1">
+                <Text className="text-sm text-gray-500 mb-1">Net Balance</Text>
+                <Text 
+                  className="text-xl font-bold"
+                  style={{ color: netBalance >= 0 ? SQUID_COLORS.teal : SQUID_COLORS.pink }}
+                >
+                  ${Math.abs(netBalance).toFixed(2)}
+                </Text>
+                <Text className="text-xs text-gray-400">
+                  {netBalance >= 0 ? 'Positive' : 'Negative'}
                 </Text>
               </View>
-            ))
-          ) : (
-            <Text className={cn(
-              "text-center py-4 opacity-70",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
-              No recent expenses
-            </Text>
-          )}
-        </GlassCard>
-
-        {/* AI Assistant CTA */}
-        <GlassCard>
-          <View className="flex-row items-center">
-            <View className="w-12 h-12 bg-blue-500 rounded-full items-center justify-center mr-4">
-              <Ionicons name="chatbubble-outline" size={24} color="white" />
+              
+              <View className="items-center flex-1">
+                <Text className="text-sm text-gray-500 mb-1">You're Owed</Text>
+                <Text 
+                  className="text-xl font-bold"
+                  style={{ color: SQUID_COLORS.teal }}
+                >
+                  ${totalOwed.toFixed(2)}
+                </Text>
+                <Text className="text-xs text-gray-400">From friends</Text>
+              </View>
+              
+              <View className="items-center flex-1">
+                <Text className="text-sm text-gray-500 mb-1">You Owe</Text>
+                <Text 
+                  className="text-xl font-bold"
+                  style={{ color: SQUID_COLORS.pink }}
+                >
+                  ${totalOwing.toFixed(2)}
+                </Text>
+                <Text className="text-xs text-gray-400">To friends</Text>
+              </View>
             </View>
-            <View className="flex-1">
-              <Text className={cn(
-                "font-semibold",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                AI Assistant
-              </Text>
-              <Text className={cn(
-                "text-sm opacity-70",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                Ask me to add expenses, split bills, or get insights
-              </Text>
-            </View>
-            <AnimatedButton
-              title="Chat"
-              size="sm"
-              onPress={() => {
-                // Placeholder for AI chat - could integrate with existing API
-                console.log('AI Chat feature - integrate with chat-service.ts');
-              }}
-            />
+            
+            {activeGoal && (
+              <View 
+                className="mt-4 p-3 rounded-xl"
+                style={{ backgroundColor: SQUID_COLORS.lightTeal + '20' }}
+              >
+                <Text className="text-sm font-semibold mb-1" style={{ color: SQUID_COLORS.teal }}>
+                  🎯 Active Goal: {activeGoal.title}
+                </Text>
+                <View className="flex-row justify-between items-center">
+                  <View className="bg-gray-200 rounded-full h-2 flex-1 mr-3">
+                    <View 
+                      className="h-2 rounded-full"
+                      style={{ 
+                        width: `${Math.min((activeGoal.currentAmount / activeGoal.targetAmount) * 100, 100)}%`,
+                        backgroundColor: SQUID_COLORS.teal
+                      }}
+                    />
+                  </View>
+                  <Text className="text-xs font-medium" style={{ color: SQUID_COLORS.teal }}>
+                    ${activeGoal.currentAmount.toFixed(0)}/${activeGoal.targetAmount.toFixed(0)}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
-        </GlassCard>
+        </Animated.View>
+
+        {/* Quick Actions */}
+        <Animated.View entering={FadeInUp.delay(200)} className="px-6 mb-6">
+          <Text 
+            className="text-lg font-bold mb-4"
+            style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+          >
+            ⚡ Quick Actions
+          </Text>
+          <View className="flex-row flex-wrap justify-between">
+            {quickActions.map((action, index) => (
+              <Animated.View
+                key={action.id}
+                entering={BounceIn.delay(100 * index)}
+                style={{ width: (width - 60) / 2, marginBottom: 16 }}
+              >
+                <Pressable
+                  onPress={action.onPress}
+                  className="rounded-2xl overflow-hidden shadow-lg"
+                  style={{ height: 120 }}
+                >
+                  <LinearGradient
+                    colors={action.colors}
+                    className="flex-1 p-4 justify-between"
+                  >
+                    <View className="flex-row justify-between items-start">
+                      <View className="flex-1">
+                        <Text className="text-white font-bold text-base mb-1">
+                          {action.title}
+                        </Text>
+                        <Text className="text-white opacity-90 text-xs">
+                          {action.subtitle}
+                        </Text>
+                      </View>
+                      <View 
+                        className="w-8 h-8 rounded-full items-center justify-center"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                      >
+                        <Ionicons 
+                          name={action.icon as any} 
+                          size={16} 
+                          color="white" 
+                        />
+                      </View>
+                    </View>
+                    
+                    <View className="self-end">
+                      <Ionicons 
+                        name="arrow-forward-circle" 
+                        size={20} 
+                        color="rgba(255,255,255,0.8)" 
+                      />
+                    </View>
+                  </LinearGradient>
+                </Pressable>
+              </Animated.View>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Stats Row */}
+        <Animated.View entering={FadeInUp.delay(300)} className="px-6 mb-6">
+          <View className="flex-row justify-between">
+            <View 
+              className="flex-1 mr-3 p-4 rounded-2xl items-center"
+              style={{ 
+                backgroundColor: SQUID_COLORS.lightPink + '20',
+                borderWidth: 1,
+                borderColor: SQUID_COLORS.lightPink
+              }}
+            >
+              <Ionicons name="trophy" size={32} color={SQUID_COLORS.pink} />
+              <Text 
+                className="text-2xl font-bold mt-2"
+                style={{ color: SQUID_COLORS.pink }}
+              >
+                {chorePoints}
+              </Text>
+              <Text className="text-sm text-gray-600">Chore Points</Text>
+            </View>
+            
+            <View 
+              className="flex-1 ml-3 p-4 rounded-2xl items-center"
+              style={{ 
+                backgroundColor: SQUID_COLORS.lightTeal + '20',
+                borderWidth: 1,
+                borderColor: SQUID_COLORS.lightTeal
+              }}
+            >
+              <Ionicons name="time" size={32} color={SQUID_COLORS.teal} />
+              <Text 
+                className="text-2xl font-bold mt-2"
+                style={{ color: SQUID_COLORS.teal }}
+              >
+                {pendingChores}
+              </Text>
+              <Text className="text-sm text-gray-600">Pending Tasks</Text>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Budget Alert */}
+        {userBudgets.length > 0 && (
+          <Animated.View entering={FadeInUp.delay(400)} className="px-6 mb-6">
+            <Text 
+              className="text-lg font-bold mb-4"
+              style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+            >
+              📊 Budget Status
+            </Text>
+            {userBudgets.slice(0, 2).map(budget => {
+              const percentage = Math.min((budget.spent / budget.limit) * 100, 100);
+              const isWarning = percentage >= budget.alertThreshold;
+              
+              return (
+                <View 
+                  key={budget.id}
+                  className="p-4 rounded-xl mb-3"
+                  style={{ 
+                    backgroundColor: isWarning ? SQUID_COLORS.lightPink + '20' : SQUID_COLORS.lightTeal + '20',
+                    borderWidth: 1,
+                    borderColor: isWarning ? SQUID_COLORS.lightPink : SQUID_COLORS.lightTeal
+                  }}
+                >
+                  <View className="flex-row justify-between items-center mb-2">
+                    <Text 
+                      className="font-semibold capitalize"
+                      style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+                    >
+                      {budget.category}
+                    </Text>
+                    <Text 
+                      className="font-bold"
+                      style={{ color: isWarning ? SQUID_COLORS.pink : SQUID_COLORS.teal }}
+                    >
+                      ${budget.spent.toFixed(0)}/${budget.limit.toFixed(0)}
+                    </Text>
+                  </View>
+                  <View className="bg-gray-200 rounded-full h-2">
+                    <View 
+                      className="h-2 rounded-full"
+                      style={{ 
+                        width: `${percentage}%`,
+                        backgroundColor: isWarning ? SQUID_COLORS.pink : SQUID_COLORS.teal
+                      }}
+                    />
+                  </View>
+                  <Text className="text-xs text-gray-500 mt-1">
+                    {percentage.toFixed(0)}% used
+                    {isWarning && ' ⚠️ Over threshold!'}
+                  </Text>
+                </View>
+              );
+            })}
+          </Animated.View>
+        )}
+
+        {/* AI Assistant */}
+        <Animated.View entering={FadeInDown.delay(500)} className="px-6 mb-6">
+          <View 
+            className="rounded-2xl p-6"
+            style={{ 
+              backgroundColor: isDark ? SQUID_COLORS.black : SQUID_COLORS.white,
+              borderWidth: 2,
+              borderColor: SQUID_COLORS.lightTeal
+            }}
+          >
+            <View className="flex-row items-center mb-4">
+              <View 
+                className="w-12 h-12 rounded-full items-center justify-center mr-4"
+                style={{ backgroundColor: SQUID_COLORS.lightTeal }}
+              >
+                <Ionicons name="chatbubble-ellipses" size={24} color="white" />
+              </View>
+              <View className="flex-1">
+                <Text 
+                  className="text-lg font-bold"
+                  style={{ color: isDark ? SQUID_COLORS.white : SQUID_COLORS.black }}
+                >
+                  AI Assistant
+                </Text>
+                <Text className="text-gray-500">
+                  Ask me to add expenses, split bills, or get insights
+                </Text>
+              </View>
+              <Pressable
+                className="rounded-xl px-4 py-2"
+                style={{ backgroundColor: SQUID_COLORS.teal }}
+              >
+                <Text className="text-white font-semibold">Chat</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Animated.View>
       </ScrollView>
     </View>
   );
