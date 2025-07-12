@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable, Dimensions, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -446,64 +446,64 @@ export default function DashboardScreen() {
         </Animated.View>
 
         {/* Stats Row */}
-        <Animated.View entering={FadeInUp.delay(300)} className="px-6 mb-6">
+        <Animated.View entering={FadeInUp.delay(300)} className="px-6 mb-4">
           <View className="flex-row justify-between">
             <View 
-              className="flex-1 mr-3 p-5 rounded-2xl items-center"
+              className="flex-1 mr-2 p-4 rounded-xl items-center"
               style={{ 
                 backgroundColor: THEME_COLORS.card,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
+                shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 3,
+                shadowRadius: 4,
+                elevation: 2,
                 borderWidth: 1,
                 borderColor: THEME_COLORS.border
               }}
             >
               <View 
-                className="w-14 h-14 rounded-xl items-center justify-center mb-3"
+                className="w-10 h-10 rounded-lg items-center justify-center mb-2"
                 style={{ backgroundColor: THEME_COLORS.accent + '15' }}
               >
-                <Ionicons name="trophy" size={24} color={THEME_COLORS.accent} />
+                <Ionicons name="trophy" size={20} color={THEME_COLORS.accent} />
               </View>
               <Text 
-                className="text-xl font-bold"
+                className="text-lg font-bold"
                 style={{ color: THEME_COLORS.accent }}
               >
                 {chorePoints}
               </Text>
-              <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12 }}>
+              <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11 }}>
                 Chore Points
               </Text>
             </View>
             
             <View 
-              className="flex-1 ml-3 p-5 rounded-2xl items-center"
+              className="flex-1 ml-2 p-4 rounded-xl items-center"
               style={{ 
                 backgroundColor: THEME_COLORS.card,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
+                shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 3,
+                shadowRadius: 4,
+                elevation: 2,
                 borderWidth: 1,
                 borderColor: THEME_COLORS.border
               }}
             >
               <View 
-                className="w-14 h-14 rounded-xl items-center justify-center mb-3"
+                className="w-10 h-10 rounded-lg items-center justify-center mb-2"
                 style={{ backgroundColor: THEME_COLORS.secondary + '15' }}
               >
-                <Ionicons name="time" size={24} color={THEME_COLORS.secondary} />
+                <Ionicons name="time" size={20} color={THEME_COLORS.secondary} />
               </View>
               <Text 
-                className="text-xl font-bold"
+                className="text-lg font-bold"
                 style={{ color: THEME_COLORS.secondary }}
               >
                 {pendingChores}
               </Text>
-              <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12 }}>
+              <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11 }}>
                 Pending Tasks
               </Text>
             </View>
@@ -512,7 +512,7 @@ export default function DashboardScreen() {
 
         {/* Budget Alert */}
         {userBudgets.length > 0 && (
-          <Animated.View entering={FadeInUp.delay(400)} className="px-6 mb-6">
+          <Animated.View entering={FadeInUp.delay(400)} className="px-6 mb-4">
             <Text 
               className="text-lg font-bold mb-4"
               style={{ color: THEME_COLORS.text }}
@@ -574,50 +574,65 @@ export default function DashboardScreen() {
           </Animated.View>
         )}
 
-        {/* AI Assistant */}
-        <Animated.View entering={FadeInDown.delay(500)} className="px-6 mb-6">
-          <View 
-            className="rounded-2xl p-5"
-            style={{ 
-              backgroundColor: THEME_COLORS.card,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.08,
-              shadowRadius: 12,
-              elevation: 6,
-              borderWidth: 1,
-              borderColor: THEME_COLORS.border
-            }}
-          >
-            <View className="flex-row items-center mb-4">
-              <LinearGradient
-                colors={[THEME_COLORS.primary, THEME_COLORS.secondary]}
-                className="w-12 h-12 rounded-xl items-center justify-center mr-4"
-              >
-                <Ionicons name="chatbubble-ellipses" size={20} color="white" />
-              </LinearGradient>
-              <View className="flex-1">
-                <Text 
-                  className="text-lg font-bold"
-                  style={{ color: THEME_COLORS.text }}
-                >
-                  AI Assistant
-                </Text>
-                <Text style={{ color: THEME_COLORS.textSecondary }}>
-                  Ask me to add expenses, split bills, or get insights
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => navigation.navigate('AIChat')}
-                className="rounded-xl px-4 py-2"
-                style={{ backgroundColor: THEME_COLORS.primary }}
-              >
-                <Text className="text-white font-semibold">Chat</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Animated.View>
+
       </ScrollView>
+
+      {/* Floating AI Assistant Button */}
+      <Animated.View 
+        entering={FadeInUp.delay(600)}
+        className="absolute bottom-20 right-6"
+      >
+        <Pressable
+          onPress={() => {
+            // Open AI Chat functionality
+            Alert.alert(
+              '🤖 AI Assistant', 
+              'Hi! I can help you:\n\n• Add new expenses\n• Split bills with friends\n• Get spending insights\n• Log rides\n• Set budgets and goals\n\nWhat would you like to do?',
+              [
+                { text: 'Add Expense', onPress: () => navigation.navigate('SplitBill') },
+                { text: 'Get Insights', onPress: () => navigation.navigate('Analytics') },
+                { text: 'Chat Later', style: 'cancel' }
+              ]
+            );
+          }}
+          className="rounded-full p-4"
+          style={{ 
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.25,
+            shadowRadius: 16,
+            elevation: 12
+          }}
+        >
+          <LinearGradient
+            colors={[THEME_COLORS.primary, THEME_COLORS.secondary]}
+            className="w-14 h-14 rounded-full items-center justify-center"
+          >
+            <Ionicons name="sparkles" size={24} color="white" />
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
+
+      {/* AI Assistant Quick Tip */}
+      <Animated.View 
+        entering={FadeInUp.delay(700)}
+        className="absolute bottom-28 right-20"
+        style={{
+          backgroundColor: THEME_COLORS.text,
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          maxWidth: 150
+        }}
+      >
+        <Text className="text-white text-xs font-medium text-center">
+          💬 Tap for AI help with expenses!
+        </Text>
+        <View 
+          className="absolute -bottom-1 right-6 w-2 h-2 rotate-45"
+          style={{ backgroundColor: THEME_COLORS.text }}
+        />
+      </Animated.View>
     </View>
   );
 }
