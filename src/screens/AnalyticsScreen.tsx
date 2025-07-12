@@ -5,7 +5,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import { ExpenseCategory } from '../types';
-import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -13,16 +12,9 @@ import Animated, {
   FadeInUp,
   FadeInDown
 } from 'react-native-reanimated';
+import { SimpleLineChart, SimplePieChart, SimpleBarChart } from '../components/SimpleCharts';
 
 const { width: screenWidth } = Dimensions.get('window');
-const chartConfig = {
-  backgroundGradientFrom: '#ffffff',
-  backgroundGradientTo: '#ffffff',
-  decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-  strokeWidth: 2,
-  barPercentage: 0.7,
-};
 
 interface SpendingInsight {
   id: string;
@@ -38,8 +30,6 @@ interface CategorySpending {
   name: string;
   amount: number;
   color: string;
-  legendFontColor: string;
-  legendFontSize: number;
 }
 
 export default function AnalyticsScreen() {
@@ -112,9 +102,7 @@ export default function AnalyticsScreen() {
       .map(([category, amount], index) => ({
         name: category.charAt(0).toUpperCase() + category.slice(1),
         amount: Math.round(amount),
-        color: colors[index % colors.length],
-        legendFontColor: isDark ? '#FFFFFF' : '#111827',
-        legendFontSize: 12
+        color: colors[index % colors.length]
       }))
       .sort((a, b) => b.amount - a.amount);
   };
@@ -456,44 +444,15 @@ export default function AnalyticsScreen() {
             {timelineData.data.length > 0 && (
               <Animated.View 
                 entering={FadeInUp.delay(400)}
-                style={{ 
-                  backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-                  borderRadius: 16,
-                  padding: 20,
-                  marginBottom: 20,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 3
-                }}
               >
-                <Text style={{ 
-                  fontSize: 18, 
-                  fontWeight: '600', 
-                  color: isDark ? '#FFFFFF' : '#111827',
-                  marginBottom: 16
-                }}>
-                  📈 Spending Timeline
-                </Text>
-                <LineChart
+                <SimpleLineChart
                   data={{
                     labels: timelineData.labels,
-                    datasets: [{ data: timelineData.data }]
+                    data: timelineData.data
                   }}
-                  width={screenWidth - 80}
+                  width={screenWidth - 40}
                   height={220}
-                  chartConfig={{
-                    ...chartConfig,
-                    backgroundGradientFrom: isDark ? '#1F2937' : '#ffffff',
-                    backgroundGradientTo: isDark ? '#1F2937' : '#ffffff',
-                    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-                  }}
-                  bezier
-                  style={{
-                    marginVertical: 8,
-                    borderRadius: 16,
-                  }}
+                  isDark={isDark}
                 />
               </Animated.View>
             )}
@@ -502,71 +461,13 @@ export default function AnalyticsScreen() {
             {categoryData.length > 0 && (
               <Animated.View 
                 entering={FadeInUp.delay(500)}
-                style={{ 
-                  backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-                  borderRadius: 16,
-                  padding: 20,
-                  marginBottom: 20,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 3
-                }}
               >
-                <Text style={{ 
-                  fontSize: 18, 
-                  fontWeight: '600', 
-                  color: isDark ? '#FFFFFF' : '#111827',
-                  marginBottom: 16
-                }}>
-                  🏷️ Category Breakdown
-                </Text>
-                <PieChart
+                <SimplePieChart
                   data={categoryData}
-                  width={screenWidth - 80}
-                  height={220}
-                  chartConfig={chartConfig}
-                  accessor="amount"
-                  backgroundColor="transparent"
-                  paddingLeft="15"
-                  center={[10, 50]}
-                  absolute
+                  width={screenWidth - 40}
+                  height={240}
+                  isDark={isDark}
                 />
-                
-                {/* Category List */}
-                <View style={{ marginTop: 16 }}>
-                  {categoryData.slice(0, 5).map((category, index) => (
-                    <View key={category.name} style={{ 
-                      flexDirection: 'row', 
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 8 
-                    }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: 6,
-                          backgroundColor: category.color,
-                          marginRight: 8
-                        }} />
-                        <Text style={{ 
-                          color: isDark ? '#FFFFFF' : '#111827',
-                          fontWeight: '500'
-                        }}>
-                          {category.name}
-                        </Text>
-                      </View>
-                      <Text style={{ 
-                        color: isDark ? '#9CA3AF' : '#6B7280',
-                        fontWeight: '600'
-                      }}>
-                        ${category.amount}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
               </Animated.View>
             )}
           </>
