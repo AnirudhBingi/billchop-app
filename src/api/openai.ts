@@ -13,8 +13,15 @@ export const getOpenAIClient = () => {
   const apiKey = process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY;
   if (!apiKey) {
     console.warn("OpenAI API key not found in environment variables");
+    return null;
   }
-  return new OpenAI({
-    apiKey: apiKey,
-  });
+  
+  try {
+    return new OpenAI({
+      apiKey: apiKey,
+    });
+  } catch (error) {
+    console.error("Failed to create OpenAI client:", error);
+    return null;
+  }
 };
