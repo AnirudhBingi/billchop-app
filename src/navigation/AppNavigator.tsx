@@ -25,7 +25,6 @@ import GoalManagerModal from '../screens/GoalManagerModal';
 import CreateRideScreen from '../screens/CreateRideScreen';
 import RideLogScreen from '../screens/RideLogScreen';
 import AIChatScreen from '../screens/AIChatScreen';
-import AIChatScreen from '../screens/AIChatScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
