@@ -27,7 +27,7 @@ export type RootStackParamList = {
 
 export type TabParamList = {
   Dashboard: undefined;
-  Expenses: undefined;
+  Split: undefined;
   Chores: undefined;
   Personal: undefined;
   Profile: undefined;
@@ -48,8 +48,8 @@ function MainTabs() {
 
           if (route.name === 'Dashboard') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Expenses') {
-            iconName = focused ? 'receipt' : 'receipt-outline';
+          } else if (route.name === 'Split') {
+            iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'Chores') {
             iconName = focused ? 'checkmark-circle' : 'checkmark-circle-outline';
           } else if (route.name === 'Personal') {
@@ -77,7 +77,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Expenses" component={ExpensesScreen} />
+      <Tab.Screen name="Split" component={ExpensesScreen} />
       <Tab.Screen name="Chores" component={ChoresScreen} />
       <Tab.Screen name="Personal" component={PersonalScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />

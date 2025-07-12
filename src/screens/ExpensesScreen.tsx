@@ -20,7 +20,7 @@ export default function ExpensesScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { currentUser, settings, friends } = useUserStore();
-  const { expenses, groups, addExpense, addGroup } = useExpenseStore();
+  const { expenses, groups, addExpense, addGroup, getTotalOwed, getTotalOwing } = useExpenseStore();
   const [selectedTab, setSelectedTab] = useState<'shared' | 'groups'>('shared');
   
   const isDark = settings.theme === 'dark';
@@ -67,16 +67,29 @@ export default function ExpensesScreen() {
                       { id: expense.paidBy, name: 'Unknown User', email: '', createdAt: new Date() };
     const group = expense.groupId ? groups.find(g => g.id === expense.groupId) : null;
     
+    // Calculate split info
+    const splitCount = expense.splitBetween.length;
+    const perPersonAmount = expense.amount / splitCount;
+    const isCurrentUserPayer = currentUser?.id === expense.paidBy;
+    const isCurrentUserInSplit = currentUser ? expense.splitBetween.includes(currentUser.id) : false;
+    
     return (
       <GlassCard className="mb-3">
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
-            <Text className={cn(
-              "font-semibold text-base",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
-              {expense.title}
-            </Text>
+            <View className="flex-row items-center justify-between mb-1">
+              <Text className={cn(
+                "font-semibold text-base",
+                isDark ? "text-white" : "text-gray-900"
+              )}>
+                {expense.title}
+              </Text>
+              {isCurrentUserPayer && (
+                <View className="px-2 py-1 bg-green-500/20 rounded-full">
+                  <Text className="text-xs font-medium text-green-500">YOU PAID</Text>
+                </View>
+              )}
+            </View>
             
             {expense.description && (
               <Text className={cn(
@@ -87,9 +100,20 @@ export default function ExpensesScreen() {
               </Text>
             )}
             
-            <View className="flex-row items-center mt-2">
+            {/* Split Information */}
+            <View className="flex-row items-center mt-2 mb-2">
+              <Ionicons name="people-outline" size={14} color={isDark ? "#9CA3AF" : "#6B7280"} />
+              <Text className={cn(
+                "text-xs ml-1 opacity-70",
+                isDark ? "text-white" : "text-gray-900"
+              )}>
+                Split {splitCount} ways • ${perPersonAmount.toFixed(2)} each
+              </Text>
+            </View>
+            
+            <View className="flex-row items-center flex-wrap mt-1">
               <View className={cn(
-                "px-2 py-1 rounded-full mr-2",
+                "px-2 py-1 rounded-full mr-2 mb-1",
                 getCategoryColor(expense.category)
               )}>
                 <Text className="text-xs font-medium text-white">
@@ -98,9 +122,17 @@ export default function ExpensesScreen() {
               </View>
               
               {group && (
-                <View className="px-2 py-1 bg-blue-500/20 rounded-full mr-2">
+                <View className="px-2 py-1 bg-blue-500/20 rounded-full mr-2 mb-1">
                   <Text className="text-xs font-medium text-blue-500">
-                    {group.name}
+                    📍 {group.name}
+                  </Text>
+                </View>
+              )}
+              
+              {!isCurrentUserPayer && isCurrentUserInSplit && (
+                <View className="px-2 py-1 bg-orange-500/20 rounded-full mb-1">
+                  <Text className="text-xs font-medium text-orange-500">
+                    YOU OWE ${perPersonAmount.toFixed(2)}
                   </Text>
                 </View>
               )}
@@ -127,6 +159,11 @@ export default function ExpensesScreen() {
             )}>
               {expense.currency}
             </Text>
+            {isCurrentUserPayer && !isCurrentUserInSplit && (
+              <Text className="text-xs text-green-500 font-medium mt-1">
+                +${expense.amount.toFixed(2)}
+              </Text>
+            )}
           </View>
         </View>
       </GlassCard>
@@ -137,17 +174,33 @@ export default function ExpensesScreen() {
     const groupExpenses = expenses.filter(e => e.groupId === group.id && !e.isDraft);
     const totalAmount = groupExpenses.reduce((sum, expense) => sum + expense.amount, 0);
     
+    // Calculate user's share and balance for this group
+    const userExpenses = groupExpenses.filter(e => e.paidBy === currentUser?.id);
+    const userPaidTotal = userExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    
+    const userOwedExpenses = groupExpenses.filter(e => 
+      currentUser && e.splitBetween.includes(currentUser.id)
+    );
+    const userOwesTotal = userOwedExpenses.reduce((sum, expense) => 
+      sum + (expense.amount / expense.splitBetween.length), 0
+    );
+    
+    const netBalance = userPaidTotal - userOwesTotal;
+    
     return (
       <Pressable onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}>
         <GlassCard className="mb-3">
-          <View className="flex-row items-center justify-between">
+          <View className="flex-row items-start justify-between">
             <View className="flex-1">
-              <Text className={cn(
-                "font-semibold text-base",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                {group.name}
-              </Text>
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="home-outline" size={16} color="#3B82F6" />
+                <Text className={cn(
+                  "font-semibold text-base ml-2",
+                  isDark ? "text-white" : "text-gray-900"
+                )}>
+                  {group.name}
+                </Text>
+              </View>
               
               {group.description && (
                 <Text className={cn(
@@ -158,12 +211,30 @@ export default function ExpensesScreen() {
                 </Text>
               )}
               
-              <Text className={cn(
-                "text-xs opacity-60 mt-2",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                {group.members.length} members • {groupExpenses.length} expenses
-              </Text>
+              <View className="flex-row items-center mt-2">
+                <Ionicons name="people-outline" size={14} color={isDark ? "#9CA3AF" : "#6B7280"} />
+                <Text className={cn(
+                  "text-xs opacity-60 ml-1",
+                  isDark ? "text-white" : "text-gray-900"
+                )}>
+                  {group.members.length} roommates • {groupExpenses.length} bills split
+                </Text>
+              </View>
+              
+              {/* Balance indicator */}
+              {netBalance !== 0 && (
+                <View className={cn(
+                  "px-2 py-1 rounded-full mt-2 self-start",
+                  netBalance > 0 ? "bg-green-500/20" : "bg-red-500/20"
+                )}>
+                  <Text className={cn(
+                    "text-xs font-medium",
+                    netBalance > 0 ? "text-green-500" : "text-red-500"
+                  )}>
+                    {netBalance > 0 ? `You're owed ${netBalance.toFixed(2)}` : `You owe ${Math.abs(netBalance).toFixed(2)}`}
+                  </Text>
+                </View>
+              )}
             </View>
             
             <View className="items-end">
@@ -173,10 +244,17 @@ export default function ExpensesScreen() {
               )}>
                 ${totalAmount.toFixed(2)}
               </Text>
+              <Text className={cn(
+                "text-xs opacity-60",
+                isDark ? "text-white" : "text-gray-900"
+              )}>
+                Total spent
+              </Text>
               <Ionicons 
                 name="chevron-forward" 
                 size={16} 
-                color={isDark ? "#9CA3AF" : "#6B7280"} 
+                color={isDark ? "#9CA3AF" : "#6B7280"}
+                style={{ marginTop: 4 }}
               />
             </View>
           </View>
@@ -200,10 +278,10 @@ export default function ExpensesScreen() {
             "text-2xl font-bold",
             isDark ? "text-white" : "text-gray-900"
           )}>
-            Expenses
+            Split Bills
           </Text>
           <AnimatedButton
-            title="Add"
+            title="Split Bill"
             size="sm"
             icon={<Ionicons name="add" size={16} color="white" style={{ marginRight: 4 }} />}
             onPress={() => navigation.navigate('AddExpense', {})}
@@ -223,7 +301,7 @@ export default function ExpensesScreen() {
               "font-medium",
               selectedTab === 'shared' ? "text-white" : isDark ? "text-white" : "text-gray-900"
             )}>
-              Shared Expenses
+              Recent Bills
             </Text>
           </Pressable>
           <Pressable
@@ -237,10 +315,41 @@ export default function ExpensesScreen() {
               "font-medium",
               selectedTab === 'groups' ? "text-white" : isDark ? "text-white" : "text-gray-900"
             )}>
-              Groups
+              My Groups
             </Text>
           </Pressable>
         </View>
+      </View>
+
+      {/* Quick Balance Summary */}
+      <View className="px-4 mb-4">
+        <GlassCard>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 items-center">
+              <Text className={cn(
+                "text-xs opacity-70",
+                isDark ? "text-white" : "text-gray-900"
+              )}>
+                Total Owed to You
+              </Text>
+              <Text className="text-lg font-bold text-green-500">
+                ${getTotalOwed(currentUser?.id || '').toFixed(2)}
+              </Text>
+            </View>
+            <View className="w-px h-8 bg-gray-300/30" />
+            <View className="flex-1 items-center">
+              <Text className={cn(
+                "text-xs opacity-70",
+                isDark ? "text-white" : "text-gray-900"
+              )}>
+                Total You Owe
+              </Text>
+              <Text className="text-lg font-bold text-red-500">
+                ${getTotalOwing(currentUser?.id || '').toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        </GlassCard>
       </View>
 
       {/* Content */}
@@ -277,7 +386,7 @@ export default function ExpensesScreen() {
               "text-lg font-semibold mb-3",
               isDark ? "text-white" : "text-gray-900"
             )}>
-              Recent Shared Expenses
+              Recent Split Bills
             </Text>
             {filteredExpenses.length > 0 ? (
               filteredExpenses.map((expense) => (
@@ -295,13 +404,13 @@ export default function ExpensesScreen() {
                     "text-lg font-medium mt-4",
                     isDark ? "text-white" : "text-gray-900"
                   )}>
-                    No shared expenses yet
+                    No split bills yet
                   </Text>
                   <Text className={cn(
                     "text-sm opacity-70 text-center mt-2",
                     isDark ? "text-white" : "text-gray-900"
                   )}>
-                    Start splitting expenses with your roommates and friends
+                    Start splitting bills with your roommates and friends
                   </Text>
                   <View className="flex-row space-x-2 mt-4">
                     <AnimatedButton
@@ -323,7 +432,7 @@ export default function ExpensesScreen() {
                       }}
                     />
                     <AnimatedButton
-                      title="Add Shared Expense"
+                      title="Split a Bill"
                       size="sm"
                       onPress={() => navigation.navigate('AddExpense', {})}
                     />
@@ -338,7 +447,7 @@ export default function ExpensesScreen() {
               "text-lg font-semibold mb-3",
               isDark ? "text-white" : "text-gray-900"
             )}>
-              Your Groups
+              My Roommate Groups
             </Text>
             {groups.length > 0 ? (
               groups.map((group) => (

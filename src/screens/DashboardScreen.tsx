@@ -172,7 +172,7 @@ export default function DashboardScreen() {
           {/* First Row - Shared Expenses */}
           <View className="flex-row mb-3">
             <QuickActionCard
-              title="Shared Expense"
+              title="Split Bill"
               icon="people-outline"
               onPress={() => navigation.navigate('AddExpense', {})}
               color="#3B82F6"
