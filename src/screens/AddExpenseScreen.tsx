@@ -35,8 +35,6 @@ export default function AddExpenseScreen() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('other');
-  const [isPersonal, setIsPersonal] = useState(routeIsPersonal || false);
-  const [isIncome, setIsIncome] = useState(routeIsIncome || false);
   const [selectedGroupId, setSelectedGroupId] = useState(groupId || '');
   const [selectedPayer, setSelectedPayer] = useState(currentUser?.id || '');
   const [selectedSplitters, setSelectedSplitters] = useState<string[]>([currentUser?.id || '']);
@@ -53,46 +51,27 @@ export default function AddExpenseScreen() {
       return;
     }
 
-    if (isPersonal) {
-      // Save as personal expense/income
-      const personalExpense: PersonalExpense = {
-        id: Date.now().toString(),
-        title: title.trim(),
-        description: description.trim(),
-        amount: parseFloat(amount),
-        currency: settings.primaryCurrency,
-        category,
-        type: isIncome ? 'income' : 'expense',
-        date: new Date(),
-        isHomeCountry: false, // TODO: Add home country toggle
-      };
-
-      addPersonalExpense(personalExpense);
-    } else {
-      // Save as shared expense
-      if (selectedSplitters.length === 0) {
-        Alert.alert('Error', 'Please select at least one person to split the expense with.');
-        return;
-      }
-
-      const expense: Expense = {
-        id: Date.now().toString(),
-        title: title.trim(),
-        description: description.trim(),
-        amount: parseFloat(amount),
-        currency: settings.primaryCurrency,
-        category,
-        paidBy: selectedPayer,
-        splitBetween: selectedSplitters,
-        groupId: selectedGroupId || undefined,
-        date: new Date(),
-        createdAt: new Date(),
-        isDraft,
-      };
-
-      addExpense(expense);
+    if (selectedSplitters.length === 0) {
+      Alert.alert('Error', 'Please select at least one person to split the expense with.');
+      return;
     }
 
+    const expense: Expense = {
+      id: Date.now().toString(),
+      title: title.trim(),
+      description: description.trim(),
+      amount: parseFloat(amount),
+      currency: settings.primaryCurrency,
+      category,
+      paidBy: selectedPayer,
+      splitBetween: selectedSplitters,
+      groupId: selectedGroupId || undefined,
+      date: new Date(),
+      createdAt: new Date(),
+      isDraft,
+    };
+
+    addExpense(expense);
     navigation.goBack();
   };
 
@@ -166,116 +145,103 @@ export default function AddExpenseScreen() {
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Expense Type Toggle */}
+        {/* Split With Section */}
         <GlassCard className="mb-4">
           <Text className={cn(
             "text-lg font-semibold mb-4",
             isDark ? "text-white" : "text-gray-900"
           )}>
-            Expense Type
+            Split With
           </Text>
           
           <View className="flex-row">
             <Pressable
-              onPress={() => setIsPersonal(false)}
+              onPress={() => setSelectedGroupId('')}
               className={cn(
-                "flex-1 p-3 rounded-xl mr-2 border-2",
-                !isPersonal 
+                "flex-1 p-4 rounded-xl mr-2 border-2",
+                !selectedGroupId 
                   ? "bg-blue-500/20 border-blue-500" 
                   : isDark ? "bg-gray-700/50 border-gray-600" : "bg-gray-100 border-gray-200"
               )}
             >
               <View className="items-center">
                 <Ionicons 
-                  name="people-outline" 
-                  size={24} 
-                  color={!isPersonal ? "#3B82F6" : isDark ? "#9CA3AF" : "#6B7280"} 
+                  name="person-add-outline" 
+                  size={28} 
+                  color={!selectedGroupId ? "#3B82F6" : isDark ? "#9CA3AF" : "#6B7280"} 
                 />
                 <Text className={cn(
-                  "font-medium mt-2 text-center",
-                  !isPersonal ? "text-blue-500" : isDark ? "text-white" : "text-gray-900"
+                  "font-semibold mt-2 text-center",
+                  !selectedGroupId ? "text-blue-500" : isDark ? "text-white" : "text-gray-900"
                 )}>
-                  Shared Expense
+                  Expense with Friends
                 </Text>
                 <Text className={cn(
                   "text-xs text-center mt-1 opacity-70",
                   isDark ? "text-white" : "text-gray-900"
                 )}>
-                  Split with friends
+                  Select individual friends
                 </Text>
               </View>
             </Pressable>
             
             <Pressable
-              onPress={() => setIsPersonal(true)}
+              onPress={() => setSelectedGroupId(groups.length > 0 ? groups[0].id : '')}
               className={cn(
-                "flex-1 p-3 rounded-xl ml-2 border-2",
-                isPersonal 
-                  ? "bg-green-500/20 border-green-500" 
+                "flex-1 p-4 rounded-xl ml-2 border-2",
+                selectedGroupId 
+                  ? "bg-blue-500/20 border-blue-500" 
                   : isDark ? "bg-gray-700/50 border-gray-600" : "bg-gray-100 border-gray-200"
               )}
             >
               <View className="items-center">
                 <Ionicons 
-                  name="person-outline" 
-                  size={24} 
-                  color={isPersonal ? "#10B981" : isDark ? "#9CA3AF" : "#6B7280"} 
+                  name="home-outline" 
+                  size={28} 
+                  color={selectedGroupId ? "#3B82F6" : isDark ? "#9CA3AF" : "#6B7280"} 
                 />
                 <Text className={cn(
-                  "font-medium mt-2 text-center",
-                  isPersonal ? "text-green-500" : isDark ? "text-white" : "text-gray-900"
+                  "font-semibold mt-2 text-center",
+                  selectedGroupId ? "text-blue-500" : isDark ? "text-white" : "text-gray-900"
                 )}>
-                  Personal {isIncome ? 'Income' : 'Expense'}
+                  Group Expense
                 </Text>
                 <Text className={cn(
                   "text-xs text-center mt-1 opacity-70",
                   isDark ? "text-white" : "text-gray-900"
                 )}>
-                  Just for you
+                  Use existing group
                 </Text>
               </View>
             </Pressable>
           </View>
-          
-          {isPersonal && (
-            <View className="mt-4">
-              <View className="flex-row items-center justify-between">
-                <Text className={cn(
-                  "font-medium",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  This is income (not an expense)
-                </Text>
-                <Switch
-                  value={isIncome}
-                  onValueChange={setIsIncome}
-                  trackColor={{ false: isDark ? '#374151' : '#E5E7EB', true: '#10B981' }}
-                  thumbColor={isIncome ? '#FFFFFF' : '#9CA3AF'}
-                />
-              </View>
-            </View>
-          )}
         </GlassCard>
 
-        {/* Basic Info */}
+        {/* Expense Details */}
         <GlassCard className="mb-4">
           <Text className={cn(
             "text-lg font-semibold mb-4",
             isDark ? "text-white" : "text-gray-900"
           )}>
-            {isPersonal ? (isIncome ? 'Income' : 'Personal Expense') : 'Shared Expense'} Details
+            Expense Details
+          </Text>
+          <Text className={cn(
+            "text-lg font-semibold mb-4",
+            isDark ? "text-white" : "text-gray-900"
+          )}>
+            Expense Details
           </Text>
           
           <Text className={cn(
             "text-sm font-medium mb-2",
             isDark ? "text-white" : "text-gray-900"
           )}>
-            Title *
+            What did you spend on? *
           </Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder={isPersonal ? (isIncome ? "What income did you receive?" : "What did you buy?") : "What did you spend on?"}
+            placeholder="e.g., Grocery shopping, Dinner, Uber ride"
             placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
             className={cn(
               "p-3 rounded-xl mb-4 text-base",
@@ -305,12 +271,12 @@ export default function AddExpenseScreen() {
             "text-sm font-medium mb-2",
             isDark ? "text-white" : "text-gray-900"
           )}>
-            Description
+            Description (Optional)
           </Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="Add a note (optional)"
+            placeholder="Add a note about this expense"
             multiline
             numberOfLines={2}
             placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
@@ -321,23 +287,17 @@ export default function AddExpenseScreen() {
           />
         </GlassCard>
 
-        {/* Category & Group */}
+        {/* Category */}
         <GlassCard className="mb-4">
           <Text className={cn(
             "text-lg font-semibold mb-4",
             isDark ? "text-white" : "text-gray-900"
           )}>
-            Category & Group
-          </Text>
-          
-          <Text className={cn(
-            "text-sm font-medium mb-2",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
             Category
           </Text>
+          
           <View className={cn(
-            "rounded-xl mb-4 overflow-hidden",
+            "rounded-xl overflow-hidden",
             isDark ? "bg-gray-700 border border-gray-600" : "bg-white border border-gray-200"
           )}>
             <Picker
@@ -357,39 +317,9 @@ export default function AddExpenseScreen() {
               ))}
             </Picker>
           </View>
-          
-          {groups.length > 0 && (
-            <>
-              <Text className={cn(
-                "text-sm font-medium mb-2",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                Group (Optional)
-              </Text>
-              <View className={cn(
-                "rounded-xl mb-4 overflow-hidden",
-                isDark ? "bg-gray-700 border border-gray-600" : "bg-white border border-gray-200"
-              )}>
-                <Picker
-                  selectedValue={selectedGroupId}
-                  onValueChange={setSelectedGroupId}
-                  style={{ 
-                    color: isDark ? "#FFFFFF" : "#111827",
-                    backgroundColor: isDark ? "#374151" : "#FFFFFF"
-                  }}
-                >
-                  <Picker.Item label="No group" value="" />
-                  {groups.map(group => (
-                    <Picker.Item key={group.id} label={group.name} value={group.id} />
-                  ))}
-                </Picker>
-              </View>
-            </>
-          )}
         </GlassCard>
 
-        {/* Payer Selection - Only for shared expenses */}
-        {!isPersonal && (
+        {/* Who Paid */}
         <GlassCard className="mb-4">
           <Text className={cn(
             "text-lg font-semibold mb-4",
@@ -416,10 +346,8 @@ export default function AddExpenseScreen() {
             </Picker>
           </View>
         </GlassCard>
-        )}
 
-        {/* Split Between - Only for shared expenses */}
-        {!isPersonal && (
+        {/* Split Between */}
         <GlassCard className="mb-4">
           <Text className={cn(
             "text-lg font-semibold mb-4",
@@ -432,10 +360,8 @@ export default function AddExpenseScreen() {
             <SplitterItem key={user.id} user={user} />
           ))}
         </GlassCard>
-        )}
 
-        {/* Draft Toggle - Only for shared expenses */}
-        {!isPersonal && (
+        {/* Draft Toggle */}
         <GlassCard className="mb-6">
           <Pressable
             onPress={() => setIsDraft(!isDraft)}
@@ -462,7 +388,6 @@ export default function AddExpenseScreen() {
             />
           </Pressable>
         </GlassCard>
-        )}
       </ScrollView>
 
       {/* Bottom Actions */}
@@ -475,7 +400,7 @@ export default function AddExpenseScreen() {
             onPress={() => navigation.goBack()}
           />
           <AnimatedButton
-            title={isPersonal ? (isIncome ? "Add Income" : "Add Personal Expense") : (isDraft ? "Save Draft" : "Add Shared Expense")}
+            title={isDraft ? "Save Draft" : "Split Bill"}
             className="flex-1"
             onPress={handleSave}
           />
