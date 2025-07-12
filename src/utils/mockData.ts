@@ -1,0 +1,180 @@
+import { User, Group, Expense, Chore } from '../types';
+
+export const mockUsers: User[] = [
+  {
+    id: '1',
+    name: 'Alex Student',
+    email: 'alex@university.edu',
+    createdAt: new Date('2024-01-15'),
+  },
+  {
+    id: '2',
+    name: 'Sarah Chen',
+    email: 'sarah.chen@university.edu',
+    createdAt: new Date('2024-01-20'),
+  },
+  {
+    id: '3',
+    name: 'Mike Rodriguez',
+    email: 'mike.r@university.edu',
+    createdAt: new Date('2024-02-01'),
+  },
+  {
+    id: '4',
+    name: 'Emma Wilson',
+    email: 'emma.w@university.edu',
+    createdAt: new Date('2024-02-10'),
+  },
+];
+
+export const mockGroups: Group[] = [
+  {
+    id: 'group1',
+    name: 'Apartment 4B',
+    description: 'Main apartment expenses',
+    members: ['1', '2', '3', '4'],
+    createdBy: '1',
+    createdAt: new Date('2024-01-15'),
+  },
+  {
+    id: 'group2',
+    name: 'Weekend Squad',
+    description: 'Weekend trips and activities',
+    members: ['1', '2', '3'],
+    createdBy: '2',
+    createdAt: new Date('2024-02-01'),
+  },
+];
+
+export const mockExpenses: Expense[] = [
+  {
+    id: 'exp1',
+    title: 'Grocery Shopping',
+    description: 'Weekly groceries from Whole Foods',
+    amount: 156.78,
+    currency: 'USD',
+    category: 'groceries',
+    paidBy: '1',
+    splitBetween: ['1', '2', '3', '4'],
+    groupId: 'group1',
+    date: new Date('2024-12-10'),
+    createdAt: new Date('2024-12-10'),
+    isDraft: false,
+  },
+  {
+    id: 'exp2',
+    title: 'Utility Bill - December',
+    description: 'Electricity and water bill',
+    amount: 89.50,
+    currency: 'USD',
+    category: 'utilities',
+    paidBy: '2',
+    splitBetween: ['1', '2', '3', '4'],
+    groupId: 'group1',
+    date: new Date('2024-12-08'),
+    createdAt: new Date('2024-12-08'),
+    isDraft: false,
+  },
+  {
+    id: 'exp3',
+    title: 'Movie Night',
+    description: 'Cinema tickets and snacks',
+    amount: 45.00,
+    currency: 'USD',
+    category: 'entertainment',
+    paidBy: '3',
+    splitBetween: ['1', '2', '3'],
+    groupId: 'group2',
+    date: new Date('2024-12-06'),
+    createdAt: new Date('2024-12-06'),
+    isDraft: false,
+  },
+  {
+    id: 'exp4',
+    title: 'Pizza Delivery',
+    description: 'Late night study session fuel',
+    amount: 32.50,
+    currency: 'USD',
+    category: 'food',
+    paidBy: '1',
+    splitBetween: ['1', '2'],
+    date: new Date('2024-12-11'),
+    createdAt: new Date('2024-12-11'),
+    isDraft: true,
+  },
+];
+
+export const mockChores: Chore[] = [
+  {
+    id: 'chore1',
+    title: 'Clean Kitchen',
+    description: 'Deep clean counters, sink, and appliances',
+    category: 'kitchen',
+    assignedTo: '2',
+    groupId: 'group1',
+    points: 15,
+    dueDate: new Date('2024-12-15'),
+    isRecurring: true,
+    recurringPattern: 'weekly',
+    status: 'pending',
+  },
+  {
+    id: 'chore2',
+    title: 'Take Out Trash',
+    description: 'Empty all bins and take to dumpster',
+    category: 'general_cleaning',
+    groupId: 'group1',
+    points: 5,
+    dueDate: new Date('2024-12-13'),
+    isRecurring: true,
+    recurringPattern: 'weekly',
+    status: 'pending',
+  },
+  {
+    id: 'chore3',
+    title: 'Vacuum Living Room',
+    description: 'Vacuum carpet and under furniture',
+    category: 'living_room',
+    assignedTo: '3',
+    groupId: 'group1',
+    points: 10,
+    isRecurring: false,
+    status: 'completed',
+    completedAt: new Date('2024-12-10'),
+    completedBy: '3',
+  },
+  {
+    id: 'chore4',
+    title: 'Clean Bathroom',
+    description: 'Scrub shower, toilet, and sink',
+    category: 'bathroom',
+    assignedTo: '1',
+    groupId: 'group1',
+    points: 20,
+    dueDate: new Date('2024-12-14'),
+    isRecurring: true,
+    recurringPattern: 'weekly',
+    status: 'in_progress',
+  },
+  {
+    id: 'chore5',
+    title: 'Mop Floors',
+    description: 'Mop kitchen and bathroom floors',
+    category: 'general_cleaning',
+    groupId: 'group1',
+    points: 12,
+    isRecurring: false,
+    status: 'pending',
+  },
+];
+
+export function initializeMockData() {
+  // This function can be called to populate stores with mock data
+  // Implementation would go in the respective screens where needed
+  return {
+    users: mockUsers,
+    groups: mockGroups,
+    expenses: mockExpenses,
+    chores: mockChores,
+  };
+}
