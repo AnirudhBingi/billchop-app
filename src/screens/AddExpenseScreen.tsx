@@ -29,14 +29,14 @@ export default function AddExpenseScreen() {
   const { groups, addExpense, addPersonalExpense } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
-  const { groupId, isPersonal: routeIsPersonal } = route.params || {};
+  const { groupId, isPersonal: routeIsPersonal, isIncome: routeIsIncome } = route.params || {};
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('other');
   const [isPersonal, setIsPersonal] = useState(routeIsPersonal || false);
-  const [isIncome, setIsIncome] = useState(false);
+  const [isIncome, setIsIncome] = useState(routeIsIncome || false);
   const [selectedGroupId, setSelectedGroupId] = useState(groupId || '');
   const [selectedPayer, setSelectedPayer] = useState(currentUser?.id || '');
   const [selectedSplitters, setSelectedSplitters] = useState<string[]>([currentUser?.id || '']);

@@ -66,21 +66,21 @@ export default function DashboardScreen() {
   const pendingChores = chores.filter(c => c.status === 'pending').length;
   const recentExpenses = expenses.slice(0, 3);
 
-  const QuickActionCard = ({ title, icon, onPress, color = "blue" }: {
+  const QuickActionCard = ({ title, icon, onPress, color = "#3B82F6" }: {
     title: string;
     icon: keyof typeof Ionicons.glyphMap;
     onPress: () => void;
     color?: string;
   }) => (
     <Pressable onPress={onPress} className="flex-1">
-      <GlassCard className="items-center justify-center h-24 mx-1">
+      <GlassCard className="items-center justify-center h-20 mx-1">
         <Ionicons 
           name={icon} 
-          size={24} 
-          color={color === "blue" ? "#3B82F6" : color === "green" ? "#10B981" : "#F59E0B"} 
+          size={20} 
+          color={color} 
         />
         <Text className={cn(
-          "text-sm font-medium mt-2 text-center",
+          "text-xs font-medium mt-1 text-center",
           isDark ? "text-white" : "text-gray-900"
         )}>
           {title}
@@ -168,17 +168,14 @@ export default function DashboardScreen() {
           )}>
             Quick Actions
           </Text>
-          <View className="flex-row">
+          
+          {/* First Row - Shared Expenses */}
+          <View className="flex-row mb-3">
             <QuickActionCard
-              title="Add Expense"
-              icon="add-circle-outline"
+              title="Shared Expense"
+              icon="people-outline"
               onPress={() => navigation.navigate('AddExpense', {})}
-            />
-            <QuickActionCard
-              title="Add Chore"
-              icon="checkmark-circle-outline"
-              onPress={() => navigation.navigate('AddChore', {})}
-              color="green"
+              color="#3B82F6"
             />
             <QuickActionCard
               title="Settle Up"
@@ -186,6 +183,35 @@ export default function DashboardScreen() {
               onPress={() => navigation.navigate('MainTabs')}
               color="#F59E0B"
             />
+          </View>
+          
+          {/* Second Row - Personal Finance */}
+          <View className="flex-row mb-3">
+            <QuickActionCard
+              title="Personal Expense"
+              icon="card-outline"
+              onPress={() => navigation.navigate('AddExpense', { isPersonal: true })}
+              color="#EF4444"
+            />
+            <QuickActionCard
+              title="Add Income"
+              icon="trending-up-outline"
+              onPress={() => navigation.navigate('AddExpense', { isPersonal: true, isIncome: true })}
+              color="#10B981"
+            />
+          </View>
+          
+          {/* Third Row - Chores */}
+          <View className="flex-row">
+            <QuickActionCard
+              title="Add Chore"
+              icon="checkmark-circle-outline"
+              onPress={() => navigation.navigate('AddChore', {})}
+              color="#8B5CF6"
+            />
+            <View className="flex-1 mx-1">
+              {/* Empty space for visual balance */}
+            </View>
           </View>
         </GlassCard>
 
