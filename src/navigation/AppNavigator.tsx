@@ -17,7 +17,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
-  AddExpense: { groupId?: string };
+  AddExpense: { groupId?: string; isPersonal?: boolean };
   AddChore: { groupId?: string };
   GroupDetail: { groupId: string };
   Settings: undefined;

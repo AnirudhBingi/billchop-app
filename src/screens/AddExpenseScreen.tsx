@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, Alert, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -9,7 +9,7 @@ import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import GlassCard from '../components/GlassCard';
 import AnimatedButton from '../components/AnimatedButton';
-import { Expense, ExpenseCategory, User } from '../types';
+import { Expense, ExpenseCategory, User, PersonalExpense } from '../types';
 import { Picker } from '@react-native-picker/picker';
 import { cn } from '../utils/cn';
 
@@ -26,15 +26,17 @@ export default function AddExpenseScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp_AddExpense>();
   const { currentUser, settings, friends } = useUserStore();
-  const { groups, addExpense } = useExpenseStore();
+  const { groups, addExpense, addPersonalExpense } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
-  const { groupId } = route.params;
+  const { groupId, isPersonal: routeIsPersonal } = route.params || {};
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('other');
+  const [isPersonal, setIsPersonal] = useState(routeIsPersonal || false);
+  const [isIncome, setIsIncome] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(groupId || '');
   const [selectedPayer, setSelectedPayer] = useState(currentUser?.id || '');
   const [selectedSplitters, setSelectedSplitters] = useState<string[]>([currentUser?.id || '']);
@@ -51,27 +53,46 @@ export default function AddExpenseScreen() {
       return;
     }
 
-    if (selectedSplitters.length === 0) {
-      Alert.alert('Error', 'Please select at least one person to split the expense with.');
-      return;
+    if (isPersonal) {
+      // Save as personal expense/income
+      const personalExpense: PersonalExpense = {
+        id: Date.now().toString(),
+        title: title.trim(),
+        description: description.trim(),
+        amount: parseFloat(amount),
+        currency: settings.primaryCurrency,
+        category,
+        type: isIncome ? 'income' : 'expense',
+        date: new Date(),
+        isHomeCountry: false, // TODO: Add home country toggle
+      };
+
+      addPersonalExpense(personalExpense);
+    } else {
+      // Save as shared expense
+      if (selectedSplitters.length === 0) {
+        Alert.alert('Error', 'Please select at least one person to split the expense with.');
+        return;
+      }
+
+      const expense: Expense = {
+        id: Date.now().toString(),
+        title: title.trim(),
+        description: description.trim(),
+        amount: parseFloat(amount),
+        currency: settings.primaryCurrency,
+        category,
+        paidBy: selectedPayer,
+        splitBetween: selectedSplitters,
+        groupId: selectedGroupId || undefined,
+        date: new Date(),
+        createdAt: new Date(),
+        isDraft,
+      };
+
+      addExpense(expense);
     }
 
-    const expense: Expense = {
-      id: Date.now().toString(),
-      title: title.trim(),
-      description: description.trim(),
-      amount: parseFloat(amount),
-      currency: settings.primaryCurrency,
-      category,
-      paidBy: selectedPayer,
-      splitBetween: selectedSplitters,
-      groupId: selectedGroupId || undefined,
-      date: new Date(),
-      createdAt: new Date(),
-      isDraft,
-    };
-
-    addExpense(expense);
     navigation.goBack();
   };
 
@@ -145,13 +166,104 @@ export default function AddExpenseScreen() {
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Expense Type Toggle */}
+        <GlassCard className="mb-4">
+          <Text className={cn(
+            "text-lg font-semibold mb-4",
+            isDark ? "text-white" : "text-gray-900"
+          )}>
+            Expense Type
+          </Text>
+          
+          <View className="flex-row">
+            <Pressable
+              onPress={() => setIsPersonal(false)}
+              className={cn(
+                "flex-1 p-3 rounded-xl mr-2 border-2",
+                !isPersonal 
+                  ? "bg-blue-500/20 border-blue-500" 
+                  : isDark ? "bg-gray-700/50 border-gray-600" : "bg-gray-100 border-gray-200"
+              )}
+            >
+              <View className="items-center">
+                <Ionicons 
+                  name="people-outline" 
+                  size={24} 
+                  color={!isPersonal ? "#3B82F6" : isDark ? "#9CA3AF" : "#6B7280"} 
+                />
+                <Text className={cn(
+                  "font-medium mt-2 text-center",
+                  !isPersonal ? "text-blue-500" : isDark ? "text-white" : "text-gray-900"
+                )}>
+                  Shared Expense
+                </Text>
+                <Text className={cn(
+                  "text-xs text-center mt-1 opacity-70",
+                  isDark ? "text-white" : "text-gray-900"
+                )}>
+                  Split with friends
+                </Text>
+              </View>
+            </Pressable>
+            
+            <Pressable
+              onPress={() => setIsPersonal(true)}
+              className={cn(
+                "flex-1 p-3 rounded-xl ml-2 border-2",
+                isPersonal 
+                  ? "bg-green-500/20 border-green-500" 
+                  : isDark ? "bg-gray-700/50 border-gray-600" : "bg-gray-100 border-gray-200"
+              )}
+            >
+              <View className="items-center">
+                <Ionicons 
+                  name="person-outline" 
+                  size={24} 
+                  color={isPersonal ? "#10B981" : isDark ? "#9CA3AF" : "#6B7280"} 
+                />
+                <Text className={cn(
+                  "font-medium mt-2 text-center",
+                  isPersonal ? "text-green-500" : isDark ? "text-white" : "text-gray-900"
+                )}>
+                  Personal {isIncome ? 'Income' : 'Expense'}
+                </Text>
+                <Text className={cn(
+                  "text-xs text-center mt-1 opacity-70",
+                  isDark ? "text-white" : "text-gray-900"
+                )}>
+                  Just for you
+                </Text>
+              </View>
+            </Pressable>
+          </View>
+          
+          {isPersonal && (
+            <View className="mt-4">
+              <View className="flex-row items-center justify-between">
+                <Text className={cn(
+                  "font-medium",
+                  isDark ? "text-white" : "text-gray-900"
+                )}>
+                  This is income (not an expense)
+                </Text>
+                <Switch
+                  value={isIncome}
+                  onValueChange={setIsIncome}
+                  trackColor={{ false: isDark ? '#374151' : '#E5E7EB', true: '#10B981' }}
+                  thumbColor={isIncome ? '#FFFFFF' : '#9CA3AF'}
+                />
+              </View>
+            </View>
+          )}
+        </GlassCard>
+
         {/* Basic Info */}
         <GlassCard className="mb-4">
           <Text className={cn(
             "text-lg font-semibold mb-4",
             isDark ? "text-white" : "text-gray-900"
           )}>
-            Expense Details
+            {isPersonal ? (isIncome ? 'Income' : 'Personal Expense') : 'Shared Expense'} Details
           </Text>
           
           <Text className={cn(
@@ -163,7 +275,7 @@ export default function AddExpenseScreen() {
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="What did you spend on?"
+            placeholder={isPersonal ? (isIncome ? "What income did you receive?" : "What did you buy?") : "What did you spend on?"}
             placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
             className={cn(
               "p-3 rounded-xl mb-4 text-base",
@@ -276,7 +388,8 @@ export default function AddExpenseScreen() {
           )}
         </GlassCard>
 
-        {/* Payer Selection */}
+        {/* Payer Selection - Only for shared expenses */}
+        {!isPersonal && (
         <GlassCard className="mb-4">
           <Text className={cn(
             "text-lg font-semibold mb-4",
@@ -303,8 +416,10 @@ export default function AddExpenseScreen() {
             </Picker>
           </View>
         </GlassCard>
+        )}
 
-        {/* Split Between */}
+        {/* Split Between - Only for shared expenses */}
+        {!isPersonal && (
         <GlassCard className="mb-4">
           <Text className={cn(
             "text-lg font-semibold mb-4",
@@ -317,8 +432,10 @@ export default function AddExpenseScreen() {
             <SplitterItem key={user.id} user={user} />
           ))}
         </GlassCard>
+        )}
 
-        {/* Draft Toggle */}
+        {/* Draft Toggle - Only for shared expenses */}
+        {!isPersonal && (
         <GlassCard className="mb-6">
           <Pressable
             onPress={() => setIsDraft(!isDraft)}
@@ -345,6 +462,7 @@ export default function AddExpenseScreen() {
             />
           </Pressable>
         </GlassCard>
+        )}
       </ScrollView>
 
       {/* Bottom Actions */}
@@ -357,7 +475,7 @@ export default function AddExpenseScreen() {
             onPress={() => navigation.goBack()}
           />
           <AnimatedButton
-            title={isDraft ? "Save Draft" : "Add Expense"}
+            title={isPersonal ? (isIncome ? "Add Income" : "Add Personal Expense") : (isDraft ? "Save Draft" : "Add Shared Expense")}
             className="flex-1"
             onPress={handleSave}
           />

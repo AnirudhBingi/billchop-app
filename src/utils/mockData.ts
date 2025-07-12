@@ -1,4 +1,4 @@
-import { User, Group, Expense, Chore } from '../types';
+import { User, Group, Expense, Chore, PersonalExpense } from '../types';
 
 export const mockUsers: User[] = [
   {
@@ -168,6 +168,64 @@ export const mockChores: Chore[] = [
   },
 ];
 
+export const mockPersonalExpenses: PersonalExpense[] = [
+  {
+    id: 'personal1',
+    title: 'Part-time Job Salary',
+    description: 'Weekly salary from campus bookstore',
+    amount: 450.00,
+    currency: 'USD',
+    category: 'other',
+    type: 'income',
+    date: new Date('2024-12-08'),
+    isHomeCountry: false,
+  },
+  {
+    id: 'personal2',
+    title: 'Coffee & Study Snacks',
+    description: 'Daily coffee and snacks for studying',
+    amount: 12.50,
+    currency: 'USD',
+    category: 'food',
+    type: 'expense',
+    date: new Date('2024-12-11'),
+    isHomeCountry: false,
+  },
+  {
+    id: 'personal3',
+    title: 'Textbook for Physics',
+    description: 'Required textbook for Physics 201',
+    amount: 89.99,
+    currency: 'USD',
+    category: 'education',
+    type: 'expense',
+    date: new Date('2024-12-09'),
+    isHomeCountry: false,
+  },
+  {
+    id: 'personal4',
+    title: 'Freelance Design Work',
+    description: 'Logo design project for local business',
+    amount: 200.00,
+    currency: 'USD',
+    category: 'other',
+    type: 'income',
+    date: new Date('2024-12-06'),
+    isHomeCountry: false,
+  },
+  {
+    id: 'personal5',
+    title: 'Gym Membership',
+    description: 'Monthly gym membership fee',
+    amount: 35.00,
+    currency: 'USD',
+    category: 'healthcare',
+    type: 'expense',
+    date: new Date('2024-12-01'),
+    isHomeCountry: false,
+  },
+];
+
 export function initializeMockData() {
   // This function can be called to populate stores with mock data
   // Implementation would go in the respective screens where needed
@@ -176,5 +234,6 @@ export function initializeMockData() {
     groups: mockGroups,
     expenses: mockExpenses,
     chores: mockChores,
+    personalExpenses: mockPersonalExpenses,
   };
 }

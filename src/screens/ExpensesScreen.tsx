@@ -20,7 +20,7 @@ export default function ExpensesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { currentUser, settings, friends } = useUserStore();
   const { expenses, groups } = useExpenseStore();
-  const [selectedTab, setSelectedTab] = useState<'all' | 'groups'>('all');
+  const [selectedTab, setSelectedTab] = useState<'shared' | 'groups'>('shared');
   
   const isDark = settings.theme === 'dark';
   
@@ -179,15 +179,15 @@ export default function ExpensesScreen() {
           <Pressable
             className={cn(
               "flex-1 py-2 rounded-lg items-center",
-              selectedTab === 'all' && "bg-blue-500"
+              selectedTab === 'shared' && "bg-blue-500"
             )}
-            onPress={() => setSelectedTab('all')}
+            onPress={() => setSelectedTab('shared')}
           >
             <Text className={cn(
               "font-medium",
-              selectedTab === 'all' ? "text-white" : isDark ? "text-white" : "text-gray-900"
+              selectedTab === 'shared' ? "text-white" : isDark ? "text-white" : "text-gray-900"
             )}>
-              All Expenses
+              Shared Expenses
             </Text>
           </Pressable>
           <Pressable
@@ -213,7 +213,7 @@ export default function ExpensesScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Draft Expenses */}
-        {draftExpenses.length > 0 && selectedTab === 'all' && (
+        {draftExpenses.length > 0 && selectedTab === 'shared' && (
           <View className="mb-4">
             <Text className={cn(
               "text-lg font-semibold mb-3",
@@ -235,13 +235,13 @@ export default function ExpensesScreen() {
         )}
 
         {/* Main Content */}
-        {selectedTab === 'all' ? (
+        {selectedTab === 'shared' ? (
           <View>
             <Text className={cn(
               "text-lg font-semibold mb-3",
               isDark ? "text-white" : "text-gray-900"
             )}>
-              Recent Expenses
+              Recent Shared Expenses
             </Text>
             {filteredExpenses.length > 0 ? (
               filteredExpenses.map((expense) => (
@@ -259,16 +259,16 @@ export default function ExpensesScreen() {
                     "text-lg font-medium mt-4",
                     isDark ? "text-white" : "text-gray-900"
                   )}>
-                    No expenses yet
+                    No shared expenses yet
                   </Text>
                   <Text className={cn(
                     "text-sm opacity-70 text-center mt-2",
                     isDark ? "text-white" : "text-gray-900"
                   )}>
-                    Start by adding your first expense or creating a group
+                    Start splitting expenses with your roommates and friends
                   </Text>
                   <AnimatedButton
-                    title="Add Expense"
+                    title="Add Shared Expense"
                     className="mt-4"
                     onPress={() => navigation.navigate('AddExpense', {})}
                   />

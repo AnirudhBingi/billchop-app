@@ -10,7 +10,7 @@ import { useExpenseStore } from '../state/useExpenseStore';
 import { useChoreStore } from '../state/useChoreStore';
 import GlassCard from '../components/GlassCard';
 import AnimatedButton from '../components/AnimatedButton';
-import { mockUsers, mockGroups, mockExpenses, mockChores } from '../utils/mockData';
+import { mockUsers, mockGroups, mockExpenses, mockChores, mockPersonalExpenses } from '../utils/mockData';
 import { cn } from '../utils/cn';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -48,6 +48,11 @@ export default function DashboardScreen() {
       // Add chores
       mockChores.forEach(chore => {
         useChoreStore.getState().addChore(chore);
+      });
+      
+      // Add personal expenses
+      mockPersonalExpenses.forEach(expense => {
+        useExpenseStore.getState().addPersonalExpense(expense);
       });
       
       // Update leaderboard
