@@ -11,7 +11,7 @@ import ChoresScreen from '../screens/ChoresScreen';
 import PersonalScreen from '../screens/PersonalScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SplitBillScreen from '../screens/SplitBillScreen';
-import ReceiptScanScreen from '../screens/ReceiptScanScreen';
+
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import ExpenseHistoryScreen from '../screens/ExpenseHistoryScreen';
 import AddChoreScreen from '../screens/AddChoreScreen';
@@ -22,7 +22,7 @@ import PersonalFinanceModal from '../screens/PersonalFinanceModal';
 export type RootStackParamList = {
   MainTabs: undefined;
   SplitBill: undefined;
-  ReceiptScan: undefined;
+
   Analytics: undefined;
   ExpenseHistory: undefined;
   AddChore: { groupId?: string };
@@ -121,14 +121,7 @@ export default function AppNavigator() {
           headerShown: true
         }}
       />
-      <Stack.Screen 
-        name="ReceiptScan" 
-        component={ReceiptScanScreen}
-        options={{ 
-          title: 'Scan Receipt',
-          headerShown: true
-        }}
-      />
+
       <Stack.Screen 
         name="Analytics" 
         component={AnalyticsScreen}

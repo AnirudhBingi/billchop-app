@@ -326,11 +326,11 @@ export default function ExpensesScreen() {
           </View>
           <View className="flex-row gap-3">
             <Pressable
-              onPress={() => navigation.navigate('ReceiptScan')}
+              onPress={() => navigation.navigate('SplitBill')}
               className="flex-1 bg-red-500 p-3 rounded-lg items-center"
             >
               <Ionicons name="camera" size={20} color="white" />
-              <Text className="text-white font-medium text-xs mt-1">📸 Smart Receipt</Text>
+              <Text className="text-white font-medium text-xs mt-1">📸 Smart Split</Text>
             </Pressable>
             
             <Pressable

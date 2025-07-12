@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, Alert, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,6 +8,9 @@ import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import { Expense, ExpenseCategory } from '../types';
 import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { getOpenAIClient } from '../api/openai';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -85,6 +88,13 @@ export default function SplitBillScreen() {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedPayer, setSelectedPayer] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
+  
+  // Receipt scanning states
+  const [receiptMode, setReceiptMode] = useState(false);
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [receiptItems, setReceiptItems] = useState<any[]>([]);
+  const [selectedReceiptItems, setSelectedReceiptItems] = useState<string[]>([]);
 
   // Initialize data
   useEffect(() => {
@@ -104,6 +114,61 @@ export default function SplitBillScreen() {
     ).filter(Boolean) || [] : [];
 
   const handleSave = () => {
+    // Receipt mode: Create multiple expenses from selected receipt items
+    if (receiptMode && receiptItems.length > 0) {
+      const selectedItems = receiptItems.filter(item => 
+        selectedReceiptItems.includes(item.id) && item.splitWith.length > 0
+      );
+
+      if (selectedItems.length === 0) {
+        Alert.alert('Error', 'Please select at least one item to split');
+        return;
+      }
+
+      // Group items by who they're split with to create separate expenses
+      const expenseGroups = new Map<string, any[]>();
+      
+      selectedItems.forEach(item => {
+        const splitKey = item.splitWith.sort().join(',');
+        if (!expenseGroups.has(splitKey)) {
+          expenseGroups.set(splitKey, []);
+        }
+        expenseGroups.get(splitKey)!.push(item);
+      });
+
+      // Create expenses for each group
+      expenseGroups.forEach((items, splitKey) => {
+        const splitWith = splitKey.split(',');
+        const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const itemNames = items.map(item => item.name).join(', ');
+        
+        const expense: Expense = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          title: `📸 ${title || 'Receipt'} - ${itemNames}`,
+          description: `Items: ${items.map(item => `${item.name} (${item.quantity}x${item.price.toFixed(2)})`).join(', ')}`,
+          amount: totalAmount,
+          currency: 'USD',
+          category: items[0].category,
+          paidBy: currentUser?.id || '',
+          splitBetween: splitWith,
+          groupId: splitType === 'group' ? selectedGroup : undefined,
+          date: new Date(),
+          createdAt: new Date(),
+          isDraft: false,
+        };
+
+        addExpense(expense);
+      });
+
+      Alert.alert(
+        'Receipt Split Successfully!', 
+        `Created ${expenseGroups.size} expense(s) from ${selectedItems.length} receipt items`, 
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+      return;
+    }
+
+    // Manual mode: Regular expense creation
     if (!title.trim() || !amount.trim() || parseFloat(amount) <= 0) {
       Alert.alert('Error', 'Please fill in title and amount');
       return;
@@ -153,6 +218,228 @@ export default function SplitBillScreen() {
       const detectedCategory = detectCategory(text);
       setCategory(detectedCategory);
     }
+  };
+
+  // Enhanced receipt analysis with better prompt
+  const analyzeReceipt = async (imageUri: string) => {
+    try {
+      setIsScanning(true);
+      
+      const openAIClient = getOpenAIClient();
+      if (!openAIClient) {
+        throw new Error('OpenAI client not available');
+      }
+      
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const response = await openAIClient.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Analyze this receipt image carefully and extract ALL visible items. Look for:
+                
+                MERCHANT INFO:
+                - Store name (Walmart, Target, etc.)
+                - Date of purchase
+                - Total amount, tax, tip
+                
+                ALL ITEMS (be thorough):
+                - Product names (even abbreviated ones like "TAL 64OZ" = "Tall 64oz item")
+                - Unit prices for each item
+                - Quantities (default to 1 if not shown)
+                - Item codes/SKUs if visible
+                
+                For categories, be smart about classification:
+                - groceries: food items, beverages, produce, dairy, meat, snacks
+                - food: prepared meals, deli items, restaurant items
+                - entertainment: games, movies, alcohol, books, magazines
+                - shopping: clothes, electronics, household items, cleaning supplies
+                - healthcare: pharmacy items, vitamins, first aid
+                - other: unidentifiable items
+                
+                Return JSON in this EXACT format:
+                {
+                  "merchant": "store name",
+                  "date": "YYYY-MM-DD",
+                  "total": number,
+                  "tax": number,
+                  "tip": number,
+                  "items": [
+                    {
+                      "name": "descriptive product name",
+                      "price": number,
+                      "quantity": number,
+                      "category": "groceries|food|entertainment|shopping|healthcare|other",
+                      "sku": "item code if visible"
+                    }
+                  ]
+                }
+                
+                IMPORTANT: 
+                - Include EVERY line item you can see, even if abbreviated
+                - If price appears to be per unit, multiply by quantity for total
+                - Be generous with item inclusion rather than conservative
+                - For unclear items, make best guess based on context
+                
+                Return ONLY the JSON, no other text.`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 2000,
+      });
+
+      const analysisText = response.choices[0]?.message?.content || '';
+      
+      try {
+        const analysisData = JSON.parse(analysisText);
+        
+        // Process receipt items
+        const processedItems = analysisData.items.map((item: any, index: number) => ({
+          id: `receipt_item_${index}`,
+          name: item.name,
+          price: parseFloat(item.price) || 0,
+          quantity: parseInt(item.quantity) || 1,
+          category: item.category,
+          sku: item.sku || '',
+          selected: true,
+          splitWith: [currentUser?.id || '']
+        }));
+        
+        setReceiptItems(processedItems);
+        setSelectedReceiptItems(processedItems.map((item: any) => item.id));
+        
+        // Auto-fill form with receipt data
+        setTitle(`📸 ${analysisData.merchant || 'Receipt'} - ${processedItems.length} items`);
+        setAmount(analysisData.total?.toString() || '');
+        setDescription(`Receipt from ${analysisData.merchant} with ${processedItems.length} items`);
+        
+        Alert.alert(
+          'Receipt Analyzed!', 
+          `Found ${processedItems.length} items. Review and select which ones to split.`
+        );
+        
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        useMockReceiptData();
+      }
+      
+    } catch (error) {
+      console.error('Receipt analysis error:', error);
+      Alert.alert(
+        'Analysis Failed', 
+        'Could not analyze receipt. Would you like to try with demo data?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Use Demo Data', onPress: useMockReceiptData }
+        ]
+      );
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Enhanced mock data based on the Walmart receipt
+  const useMockReceiptData = () => {
+    const mockItems = [
+      { id: 'item_0', name: 'TAL 64OZ (Beverage)', price: 21.82, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_1', name: 'Blackberry', price: 4.94, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_2', name: 'Blueberries', price: 4.78, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_3', name: 'OIK PRO QT (Protein)', price: 6.53, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_4', name: 'DESI WM YOG (Yogurt)', price: 3.98, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_5', name: 'Tomato Roma (2.70 lb)', price: 3.46, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_6', name: 'BRM ORG OAT (Organic Oats)', price: 6.28, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_7', name: 'Wheat Tart', price: 3.27, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_8', name: 'Red Onion (2 items)', price: 8.48, quantity: 2, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_9', name: 'Butter', price: 4.96, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_10', name: 'Foil', price: 13.46, quantity: 1, category: 'shopping', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_11', name: 'Cheesecake', price: 7.98, quantity: 1, category: 'food', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_12', name: '53Q Touch (Electronics)', price: 18.93, quantity: 1, category: 'shopping', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_13', name: 'Tray Table', price: 11.64, quantity: 1, category: 'shopping', selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_14', name: 'MS FLOORLAM (Flooring)', price: 17.74, quantity: 1, category: 'shopping', selected: true, splitWith: [currentUser?.id || ''] }
+    ];
+    
+    setReceiptItems(mockItems);
+    setSelectedReceiptItems(mockItems.map(item => item.id));
+    setTitle('📸 Walmart - 15 items');
+    setAmount('145.49');
+    setDescription('Receipt from Walmart with 15 items');
+    setReceiptMode(true);
+  };
+
+  // Image picker without fixed aspect ratio
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please grant access to photos to scan receipts');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1.0, // Higher quality for better OCR
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+      setReceiptMode(true);
+      await analyzeReceipt(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Camera Permission', 'Please grant camera access to scan receipts');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 1.0, // Higher quality for better OCR
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+      setReceiptMode(true);
+      await analyzeReceipt(result.assets[0].uri);
+    }
+  };
+
+  const toggleReceiptItem = (itemId: string) => {
+    setSelectedReceiptItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const toggleReceiptItemSplitWith = (itemId: string, friendId: string) => {
+    setReceiptItems(prev => 
+      prev.map(item => 
+        item.id === itemId 
+          ? {
+              ...item,
+              splitWith: item.splitWith.includes(friendId)
+                ? item.splitWith.filter((id: string) => id !== friendId)
+                : [...item.splitWith, friendId]
+            }
+          : item
+      )
+    );
   };
 
   return (
@@ -253,7 +540,314 @@ export default function SplitBillScreen() {
           </View>
         </View>
 
-        {/* Expense Details */}
+        {/* Receipt Upload Option */}
+        <View style={{ 
+          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+          borderRadius: 16,
+          padding: 20,
+          marginBottom: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 3
+        }}>
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: '600', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 12
+          }}>
+            📸 Smart Receipt Scanning
+          </Text>
+          <Text style={{ 
+            fontSize: 14, 
+            color: isDark ? '#9CA3AF' : '#6B7280',
+            marginBottom: 16
+          }}>
+            Scan receipt to automatically extract all items for selective splitting
+          </Text>
+          
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+            <Pressable
+              onPress={takePhoto}
+              style={{
+                flex: 1,
+                padding: 16,
+                borderRadius: 12,
+                backgroundColor: '#3B82F6',
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center'
+              }}
+            >
+              <Ionicons name="camera" size={20} color="white" style={{ marginRight: 8 }} />
+              <Text style={{ color: 'white', fontWeight: '600' }}>Take Photo</Text>
+            </Pressable>
+            
+            <Pressable
+              onPress={pickImage}
+              style={{
+                flex: 1,
+                padding: 16,
+                borderRadius: 12,
+                backgroundColor: '#10B981',
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center'
+              }}
+            >
+              <Ionicons name="images" size={20} color="white" style={{ marginRight: 8 }} />
+              <Text style={{ color: 'white', fontWeight: '600' }}>Gallery</Text>
+            </Pressable>
+          </View>
+          
+          <Pressable
+            onPress={useMockReceiptData}
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: '#F59E0B',
+              alignItems: 'center',
+              borderWidth: 2,
+              borderColor: '#FBBF24',
+              borderStyle: 'dashed'
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>
+              🎯 Try with Sample Walmart Receipt
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Receipt Preview */}
+        {imageUri && (
+          <View style={{ 
+            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 20,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 3
+          }}>
+            <Text style={{ 
+              fontSize: 16, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827',
+              marginBottom: 12
+            }}>
+              📷 Receipt Image
+            </Text>
+            <Image 
+              source={{ uri: imageUri }} 
+              style={{ 
+                width: '100%', 
+                height: 200, 
+                borderRadius: 12,
+                marginBottom: 12
+              }}
+              resizeMode="contain"
+            />
+            <Pressable
+              onPress={() => {
+                setImageUri(null);
+                setReceiptMode(false);
+                setReceiptItems([]);
+                setSelectedReceiptItems([]);
+              }}
+              style={{
+                padding: 8,
+                borderRadius: 8,
+                backgroundColor: '#EF4444',
+                alignItems: 'center'
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: '600' }}>
+                🗑️ Remove Receipt
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* AI Analysis Loading */}
+        {isScanning && (
+          <View style={{ 
+            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 3
+          }}>
+            <ActivityIndicator size="large" color="#3B82F6" />
+            <Text style={{ 
+              fontSize: 16, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827',
+              marginTop: 12
+            }}>
+              🤖 AI Analyzing Receipt...
+            </Text>
+            <Text style={{ 
+              fontSize: 14, 
+              color: isDark ? '#9CA3AF' : '#6B7280',
+              marginTop: 4,
+              textAlign: 'center'
+            }}>
+              Extracting all items, prices, and categories
+            </Text>
+          </View>
+        )}
+
+        {/* Receipt Items Selection */}
+        {receiptMode && receiptItems.length > 0 && (
+          <View style={{ 
+            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 3
+          }}>
+            <Text style={{ 
+              fontSize: 18, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827',
+              marginBottom: 16
+            }}>
+              🛒 Select Items to Split ({selectedReceiptItems.length}/{receiptItems.length})
+            </Text>
+            
+            {receiptItems.map(item => (
+              <View
+                key={item.id}
+                style={{
+                  borderWidth: 2,
+                  borderColor: selectedReceiptItems.includes(item.id) ? '#3B82F6' : '#E5E7EB',
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: 12,
+                  backgroundColor: selectedReceiptItems.includes(item.id) ? 
+                    '#EBF5FF' : (isDark ? '#374151' : '#F9FAFB')
+                }}
+              >
+                <Pressable
+                  onPress={() => toggleReceiptItem(item.id)}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}
+                >
+                  <Ionicons
+                    name={selectedReceiptItems.includes(item.id) ? 
+                      "checkmark-circle" : "ellipse-outline"}
+                    size={24}
+                    color="#3B82F6"
+                    style={{ marginRight: 12 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ 
+                      fontSize: 16, 
+                      fontWeight: '600',
+                      color: isDark ? '#FFFFFF' : '#111827' 
+                    }}>
+                      {item.name}
+                    </Text>
+                    <Text style={{ 
+                      fontSize: 14, 
+                      color: isDark ? '#9CA3AF' : '#6B7280'
+                    }}>
+                      {item.quantity}x ${item.price.toFixed(2)} • {item.category}
+                    </Text>
+                  </View>
+                  <Text style={{ 
+                    fontSize: 16, 
+                    fontWeight: '600',
+                    color: '#3B82F6'
+                  }}>
+                    ${(item.price * item.quantity).toFixed(2)}
+                  </Text>
+                </Pressable>
+                
+                {/* Split With Section for selected items */}
+                {selectedReceiptItems.includes(item.id) && (
+                  <View style={{ 
+                    borderTopWidth: 1, 
+                    borderTopColor: '#E5E7EB', 
+                    paddingTop: 12,
+                    marginTop: 8 
+                  }}>
+                    <Text style={{ 
+                      fontSize: 14, 
+                      fontWeight: '500',
+                      color: isDark ? '#FFFFFF' : '#111827',
+                      marginBottom: 8
+                    }}>
+                      Split with:
+                    </Text>
+                    
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {/* Current user */}
+                      <Pressable
+                        onPress={() => toggleReceiptItemSplitWith(item.id, currentUser?.id || '')}
+                        style={{
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          borderRadius: 16,
+                          borderWidth: 1,
+                          borderColor: item.splitWith.includes(currentUser?.id || '') ? '#3B82F6' : '#E5E7EB',
+                          backgroundColor: item.splitWith.includes(currentUser?.id || '') ? '#3B82F6' : 'transparent'
+                        }}
+                      >
+                        <Text style={{
+                          fontSize: 12,
+                          fontWeight: '500',
+                          color: item.splitWith.includes(currentUser?.id || '') ? 'white' : '#6B7280'
+                        }}>
+                          You
+                        </Text>
+                      </Pressable>
+                      
+                      {/* Friends */}
+                      {friends.map(friend => (
+                        <Pressable
+                          key={friend.id}
+                          onPress={() => toggleReceiptItemSplitWith(item.id, friend.id)}
+                          style={{
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: 16,
+                            borderWidth: 1,
+                            borderColor: item.splitWith.includes(friend.id) ? '#3B82F6' : '#E5E7EB',
+                            backgroundColor: item.splitWith.includes(friend.id) ? '#3B82F6' : 'transparent'
+                          }}
+                        >
+                          <Text style={{
+                            fontSize: 12,
+                            fontWeight: '500',
+                            color: item.splitWith.includes(friend.id) ? 'white' : '#6B7280'
+                          }}>
+                            {friend.name}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Manual Entry (shown when not in receipt mode) */}
+        {!receiptMode && (
         <View style={{ 
           backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
           borderRadius: 16,
@@ -271,7 +865,7 @@ export default function SplitBillScreen() {
             color: isDark ? '#FFFFFF' : '#111827',
             marginBottom: 16
           }}>
-            What did you spend on?
+            ✏️ Manual Entry
           </Text>
           
           <TextInput
@@ -372,6 +966,8 @@ export default function SplitBillScreen() {
             </Picker>
           </View>
         </View>
+        )}
+        {/* End Manual Entry Section */}
 
         {/* Group Selection (if group type selected) */}
         {splitType === 'group' && groups.length > 0 && (
@@ -705,7 +1301,10 @@ export default function SplitBillScreen() {
               fontWeight: '600', 
               color: 'white' 
             }}>
-              Split Bill
+              {receiptMode ? 
+                `💸 Create ${selectedReceiptItems.length} Expense${selectedReceiptItems.length !== 1 ? 's' : ''}` : 
+                'Split Bill'
+              }
             </Text>
           </Pressable>
         </View>

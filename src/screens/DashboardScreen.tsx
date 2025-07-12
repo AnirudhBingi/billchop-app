@@ -172,9 +172,9 @@ export default function DashboardScreen() {
           {/* First Row - Revolutionary Features */}
           <View className="flex-row mb-3">
             <QuickActionCard
-              title="📸 Smart Receipt"
+              title="📸 Smart Split"
               icon="camera-outline"
-              onPress={() => navigation.navigate('ReceiptScan')}
+              onPress={() => navigation.navigate('SplitBill')}
               color="#EF4444"
             />
             <QuickActionCard
