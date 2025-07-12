@@ -188,16 +188,16 @@ export default function DashboardScreen() {
           {/* Second Row - Personal Finance */}
           <View className="flex-row mb-3">
             <QuickActionCard
-              title="Personal Expense"
-              icon="card-outline"
-              onPress={() => navigation.navigate('AddExpense', { isPersonal: true })}
-              color="#EF4444"
+              title="Personal"
+              icon="wallet-outline"
+              onPress={() => navigation.navigate('PersonalFinance')}
+              color="#8B5CF6"
             />
             <QuickActionCard
-              title="Add Income"
-              icon="trending-up-outline"
-              onPress={() => navigation.navigate('AddExpense', { isPersonal: true, isIncome: true })}
-              color="#10B981"
+              title="Analytics"
+              icon="bar-chart-outline"
+              onPress={() => navigation.navigate('MainTabs')}
+              color="#06B6D4"
             />
           </View>
           

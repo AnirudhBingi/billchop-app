@@ -14,6 +14,7 @@ import AddExpenseScreen from '../screens/AddExpenseScreen';
 import AddChoreScreen from '../screens/AddChoreScreen';
 import GroupDetailScreen from '../screens/GroupDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import PersonalFinanceModal from '../screens/PersonalFinanceModal';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -21,6 +22,7 @@ export type RootStackParamList = {
   AddChore: { groupId?: string };
   GroupDetail: { groupId: string };
   Settings: undefined;
+  PersonalFinance: undefined;
 };
 
 export type TabParamList = {
@@ -132,6 +134,15 @@ export default function AppNavigator() {
         name="Settings" 
         component={SettingsScreen}
         options={{ title: 'Settings' }}
+      />
+      <Stack.Screen 
+        name="PersonalFinance" 
+        component={PersonalFinanceModal}
+        options={{ 
+          title: 'Personal Finance',
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.8, 1.0]
+        }}
       />
     </Stack.Navigator>
   );

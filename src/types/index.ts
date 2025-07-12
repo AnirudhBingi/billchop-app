@@ -88,7 +88,7 @@ export interface PersonalExpense {
   title: string;
   amount: number;
   currency: string;
-  category: string;
+  category: ExpenseCategory | IncomeCategory;
   type: 'expense' | 'income';
   date: Date;
   description?: string;
@@ -157,4 +157,13 @@ export type ChoreCategory =
   | 'laundry' 
   | 'maintenance' 
   | 'outdoor' 
+  | 'other';
+
+export type IncomeCategory = 
+  | 'salary'
+  | 'freelance'
+  | 'part_time'
+  | 'family_support'
+  | 'scholarship'
+  | 'investment'
   | 'other';
