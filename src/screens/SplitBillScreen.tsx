@@ -10,7 +10,7 @@ import { Expense, ExpenseCategory } from '../types';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { getOpenAIClient } from '../api/openai';
+import { aiAssistant } from '../services/AIAssistantService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

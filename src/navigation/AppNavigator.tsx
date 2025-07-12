@@ -24,6 +24,7 @@ import BudgetManagerModal from '../screens/BudgetManagerModal';
 import GoalManagerModal from '../screens/GoalManagerModal';
 import CreateRideScreen from '../screens/CreateRideScreen';
 import RideLogScreen from '../screens/RideLogScreen';
+import AIChatScreen from '../screens/AIChatScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -41,6 +42,7 @@ export type RootStackParamList = {
   GoalManager: undefined;
   CreateRide: undefined;
   RideLog: undefined;
+  AIChat: undefined;
 };
 
 export type TabParamList = {
@@ -225,6 +227,14 @@ export default function AppNavigator() {
         component={RideLogScreen}
         options={{ 
           title: 'Ride History',
+          headerShown: false
+        }}
+      />
+      <Stack.Screen 
+        name="AIChat" 
+        component={AIChatScreen}
+        options={{ 
+          title: 'AI Assistant',
           headerShown: false
         }}
       />

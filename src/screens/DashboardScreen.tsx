@@ -608,6 +608,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <Pressable
+                onPress={() => navigation.navigate('AIChat')}
                 className="rounded-xl px-4 py-2"
                 style={{ backgroundColor: THEME_COLORS.primary }}
               >
