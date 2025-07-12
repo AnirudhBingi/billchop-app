@@ -307,16 +307,83 @@ export default function PersonalScreen() {
                 {currentCurrency.symbol} {currentCurrency.code} • {selectedMode === 'local' ? 'Where you live' : 'Your home country'}
               </Text>
             </View>
-            <Pressable
-              onPress={() => setSelectedMode('selection')}
-              style={{ 
-                padding: 8, 
-                borderRadius: 8, 
-                backgroundColor: selectedMode === 'local' ? '#3B82F6' : '#10B981' 
-              }}
-            >
-              <Ionicons name="swap-horizontal" size={20} color="white" />
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                onPress={() => navigation.navigate('PersonalFinance')}
+                style={{ 
+                  padding: 8, 
+                  borderRadius: 8, 
+                  backgroundColor: '#10B981'
+                }}
+              >
+                <Ionicons name="add" size={20} color="white" />
+              </Pressable>
+              <Pressable
+                onPress={() => setSelectedMode('selection')}
+                style={{ 
+                  padding: 8, 
+                  borderRadius: 8, 
+                  backgroundColor: selectedMode === 'local' ? '#3B82F6' : '#10B981' 
+                }}
+              >
+                <Ionicons name="swap-horizontal" size={20} color="white" />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Quick Actions */}
+          <View style={{ 
+            backgroundColor: isDark ? '#1F2937' : '#FFFFFF', 
+            borderRadius: 16, 
+            padding: 16, 
+            marginBottom: 20,
+            shadowColor: '#000', 
+            shadowOffset: { width: 0, height: 2 }, 
+            shadowOpacity: 0.1, 
+            shadowRadius: 8, 
+            elevation: 3
+          }}>
+            <Text style={{ 
+              fontSize: 16, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827', 
+              marginBottom: 12 
+            }}>
+              ⚡ Quick Actions
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <Pressable
+                onPress={() => navigation.navigate('PersonalFinance')}
+                style={{
+                  flex: 1, 
+                  padding: 16, 
+                  borderRadius: 12, 
+                  backgroundColor: '#10B981', 
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center'
+                }}
+              >
+                <Ionicons name="add-circle" size={20} color="white" style={{ marginRight: 8 }} />
+                <Text style={{ color: 'white', fontWeight: '600' }}>Add Income</Text>
+              </Pressable>
+              
+              <Pressable
+                onPress={() => navigation.navigate('PersonalFinance')}
+                style={{
+                  flex: 1, 
+                  padding: 16, 
+                  borderRadius: 12, 
+                  backgroundColor: '#EF4444', 
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center'
+                }}
+              >
+                <Ionicons name="remove-circle" size={20} color="white" style={{ marginRight: 8 }} />
+                <Text style={{ color: 'white', fontWeight: '600' }}>Add Expense</Text>
+              </Pressable>
+            </View>
           </View>
 
           {/* Balance Overview */}
