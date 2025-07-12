@@ -74,13 +74,24 @@ export interface ChoreLeaderboard {
 export interface RideShare {
   id: string;
   driverId: string;
-  passengerId: string;
+  passengers: string[]; // Array of User IDs
+  rideDescription: string;
   distance?: number;
-  duration?: number;
-  cost: number;
+  totalCost: number;
   costType: 'fixed' | 'per_mile';
+  perMileRate?: number;
   date: Date;
-  description: string;
+  createdAt: Date;
+  isSettled: boolean;
+  costPerPerson: number;
+}
+
+export interface FavoriteRider {
+  userId: string;
+  rideCount: number;
+  totalAmount: number;
+  lastRideDate: Date;
+  commonDestinations: string[];
 }
 
 export interface PersonalExpense {

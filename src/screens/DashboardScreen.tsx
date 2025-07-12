@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,22 +15,43 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Enhanced Color Palette - Dark theme optimized
+// Refined Color Palette - Light theme optimized with vibrant accents
 const THEME_COLORS = {
-  background: '#0A0A0B',
-  surface: '#1A1A1D',
-  primary: '#8B5CF6',
-  primaryLight: '#A78BFA',
-  secondary: '#06B6D4',
+  // Backgrounds
+  background: '#FFFFFF',
+  surface: '#F8FAFC',
+  card: '#FFFFFF',
+  
+  // Primary colors - Modern and vibrant
+  primary: '#6366F1',      // Indigo
+  primaryLight: '#818CF8',
+  primaryDark: '#4338CA',
+  
+  // Secondary colors
+  secondary: '#06B6D4',     // Cyan
   secondaryLight: '#22D3EE',
-  accent: '#F59E0B',
+  secondaryDark: '#0891B2',
+  
+  // Accent colors
+  accent: '#F59E0B',        // Amber
   accentLight: '#FBBF24',
-  success: '#10B981',
-  error: '#EF4444',
+  accentDark: '#D97706',
+  
+  // Status colors
+  success: '#10B981',       // Emerald
+  successLight: '#34D399',
+  error: '#EF4444',         // Red
+  errorLight: '#F87171',
   warning: '#F59E0B',
-  white: '#FFFFFF',
-  gray: '#6B7280',
-  lightGray: '#9CA3AF'
+  
+  // Text colors
+  text: '#111827',          // Gray-900
+  textSecondary: '#6B7280', // Gray-500
+  textLight: '#9CA3AF',     // Gray-400
+  
+  // Border and divider
+  border: '#E5E7EB',        // Gray-200
+  divider: '#F3F4F6'        // Gray-100
 };
 
 const { width } = Dimensions.get('window');
@@ -42,7 +63,15 @@ export default function DashboardScreen() {
   const { expenses, personalExpenses, budgets, financialGoals, getTotalOwed, getTotalOwing } = useExpenseStore();
   const { chores, getUserPoints } = useChoreStore();
   
+  const isDark = settings.theme === 'dark';
   const userId = currentUser?.id || '';
+
+  // Mock favorite riders data
+  const [favoriteRiders] = useState([
+    { id: '1', name: 'Sarah Chen', avatar: '👩🏻‍💼', rides: 12, lastRide: 'Airport pickup' },
+    { id: '2', name: 'Mike Rodriguez', avatar: '👨🏽‍🎓', rides: 8, lastRide: 'Grocery run' },
+    { id: '3', name: 'Emma Wilson', avatar: '👩🏼‍🦰', rides: 15, lastRide: 'Campus commute' }
+  ]);
 
   // Initialize mock data for demo
   useEffect(() => {
@@ -81,7 +110,7 @@ export default function DashboardScreen() {
   const chorePoints = getUserPoints(userId);
   const pendingChores = chores.filter(c => c.assignedTo === userId && c.status === 'pending').length;
 
-  // Enhanced Quick Action Data with better design
+  // Enhanced Quick Action Data
   const quickActions = [
     {
       id: 'smart-split',
@@ -112,7 +141,7 @@ export default function DashboardScreen() {
       title: 'Personal',
       subtitle: 'My Finances',
       icon: 'wallet',
-      colors: [THEME_COLORS.success, '#34D399'],
+      colors: [THEME_COLORS.success, THEME_COLORS.successLight],
       onPress: () => navigation.navigate('MainTabs', { screen: 'Personal' })
     }
   ];
@@ -137,7 +166,7 @@ export default function DashboardScreen() {
         >
           <View className="flex-row items-center justify-between mb-2">
             <View className="flex-1">
-              <Text style={{ color: THEME_COLORS.lightGray, fontSize: 16 }}>
+              <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 16 }}>
                 Welcome back,
               </Text>
               <Text 
@@ -161,24 +190,26 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInUp.delay(100)} className="px-6 mb-6">
           <Text 
             className="text-lg font-bold mb-4"
-            style={{ color: THEME_COLORS.white }}
+            style={{ color: THEME_COLORS.text }}
           >
             💰 Financial Overview
           </Text>
           <View 
-            className="rounded-3xl p-6"
+            className="rounded-2xl p-6"
             style={{ 
-              backgroundColor: THEME_COLORS.surface,
-              shadowColor: THEME_COLORS.primary,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
+              backgroundColor: THEME_COLORS.card,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
               shadowRadius: 12,
-              elevation: 8
+              elevation: 3,
+              borderWidth: 1,
+              borderColor: THEME_COLORS.border
             }}
           >
             <View className="flex-row justify-between mb-4">
               <View className="items-center flex-1">
-                <Text style={{ color: THEME_COLORS.gray, fontSize: 12, marginBottom: 4 }}>
+                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
                   Net Balance
                 </Text>
                 <Text 
@@ -187,13 +218,13 @@ export default function DashboardScreen() {
                 >
                   ${Math.abs(netBalance).toFixed(2)}
                 </Text>
-                <Text style={{ color: THEME_COLORS.lightGray, fontSize: 10 }}>
+                <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
                   {netBalance >= 0 ? 'Positive' : 'Negative'}
                 </Text>
               </View>
               
               <View className="items-center flex-1">
-                <Text style={{ color: THEME_COLORS.gray, fontSize: 12, marginBottom: 4 }}>
+                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
                   You're Owed
                 </Text>
                 <Text 
@@ -202,13 +233,13 @@ export default function DashboardScreen() {
                 >
                   ${totalOwed.toFixed(2)}
                 </Text>
-                <Text style={{ color: THEME_COLORS.lightGray, fontSize: 10 }}>
+                <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
                   From friends
                 </Text>
               </View>
               
               <View className="items-center flex-1">
-                <Text style={{ color: THEME_COLORS.gray, fontSize: 12, marginBottom: 4 }}>
+                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
                   You Owe
                 </Text>
                 <Text 
@@ -217,7 +248,7 @@ export default function DashboardScreen() {
                 >
                   ${totalOwing.toFixed(2)}
                 </Text>
-                <Text style={{ color: THEME_COLORS.lightGray, fontSize: 10 }}>
+                <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
                   To friends
                 </Text>
               </View>
@@ -225,14 +256,17 @@ export default function DashboardScreen() {
             
             {activeGoal && (
               <View 
-                className="mt-4 p-3 rounded-2xl"
-                style={{ backgroundColor: THEME_COLORS.secondary + '20' }}
+                className="mt-4 p-3 rounded-xl"
+                style={{ backgroundColor: THEME_COLORS.secondary + '10' }}
               >
                 <Text className="text-sm font-semibold mb-1" style={{ color: THEME_COLORS.secondary }}>
                   🎯 Active Goal: {activeGoal.title}
                 </Text>
                 <View className="flex-row justify-between items-center">
-                  <View className="bg-gray-700 rounded-full h-2 flex-1 mr-3">
+                  <View 
+                    className="rounded-full h-2 flex-1 mr-3"
+                    style={{ backgroundColor: THEME_COLORS.divider }}
+                  >
                     <View 
                       className="h-2 rounded-full"
                       style={{ 
@@ -250,11 +284,94 @@ export default function DashboardScreen() {
           </View>
         </Animated.View>
 
-        {/* Quick Actions - Enhanced Design */}
+        {/* Ride Log Widget */}
+        <Animated.View entering={FadeInUp.delay(150)} className="px-6 mb-6">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text 
+              className="text-lg font-bold"
+              style={{ color: THEME_COLORS.text }}
+            >
+              🚗 Quick Ride Log
+            </Text>
+            <Pressable
+              onPress={() => navigation.navigate('RideLog')}
+              className="flex-row items-center"
+            >
+              <Text 
+                className="text-sm font-medium mr-1"
+                style={{ color: THEME_COLORS.primary }}
+              >
+                View All
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={THEME_COLORS.primary} />
+            </Pressable>
+          </View>
+          
+          <View 
+            className="rounded-2xl p-4"
+            style={{ 
+              backgroundColor: THEME_COLORS.card,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 8,
+              elevation: 3,
+              borderWidth: 1,
+              borderColor: THEME_COLORS.border
+            }}
+          >
+            <Text className="text-sm font-medium mb-3" style={{ color: THEME_COLORS.textSecondary }}>
+              Favorite Riders
+            </Text>
+            
+            <View className="flex-row justify-between mb-4">
+              {favoriteRiders.slice(0, 3).map((rider, index) => (
+                <Pressable
+                  key={rider.id}
+                  onPress={() => {/* Create ride with this person */}}
+                  className="items-center flex-1"
+                >
+                  <View 
+                    className="w-12 h-12 rounded-full items-center justify-center mb-2"
+                    style={{ backgroundColor: THEME_COLORS.surface }}
+                  >
+                    <Text className="text-lg">{rider.avatar}</Text>
+                  </View>
+                  <Text 
+                    className="text-xs font-medium text-center"
+                    style={{ color: THEME_COLORS.text }}
+                    numberOfLines={1}
+                  >
+                    {rider.name.split(' ')[0]}
+                  </Text>
+                  <Text 
+                    className="text-xs text-center"
+                    style={{ color: THEME_COLORS.textLight }}
+                  >
+                    {rider.rides} rides
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            
+            <Pressable
+              onPress={() => navigation.navigate('CreateRide')}
+              className="rounded-xl p-3"
+              style={{ backgroundColor: THEME_COLORS.primary }}
+            >
+              <View className="flex-row items-center justify-center">
+                <Ionicons name="add-circle" size={20} color="white" style={{ marginRight: 8 }} />
+                <Text className="text-white font-semibold">Log New Ride</Text>
+              </View>
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        {/* Quick Actions */}
         <Animated.View entering={FadeInUp.delay(200)} className="px-6 mb-6">
           <Text 
             className="text-lg font-bold mb-4"
-            style={{ color: THEME_COLORS.white }}
+            style={{ color: THEME_COLORS.text }}
           >
             ⚡ Quick Actions
           </Text>
@@ -267,31 +384,31 @@ export default function DashboardScreen() {
               >
                 <Pressable
                   onPress={action.onPress}
-                  className="rounded-3xl overflow-hidden"
+                  className="rounded-2xl overflow-hidden"
                   style={{ 
-                    height: 140,
+                    height: 120,
                     shadowColor: action.colors[0],
-                    shadowOffset: { width: 0, height: 8 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 16,
-                    elevation: 12
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 12,
+                    elevation: 6
                   }}
                 >
                   <LinearGradient
                     colors={action.colors}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    className="flex-1 p-5 justify-between"
+                    className="flex-1 p-4 justify-between"
                   >
                     {/* Icon at top */}
                     <View className="self-start">
                       <View 
-                        className="w-12 h-12 rounded-2xl items-center justify-center"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                        className="w-10 h-10 rounded-xl items-center justify-center"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.25)' }}
                       >
                         <Ionicons 
                           name={action.icon as any} 
-                          size={24} 
+                          size={20} 
                           color="white" 
                         />
                       </View>
@@ -299,7 +416,7 @@ export default function DashboardScreen() {
                     
                     {/* Content at bottom */}
                     <View>
-                      <Text className="text-white font-bold text-lg mb-1">
+                      <Text className="text-white font-bold text-base mb-1">
                         {action.title}
                       </Text>
                       <Text className="text-white opacity-90 text-sm">
@@ -308,11 +425,11 @@ export default function DashboardScreen() {
                     </View>
                     
                     {/* Arrow indicator */}
-                    <View className="absolute top-4 right-4">
+                    <View className="absolute top-3 right-3">
                       <Ionicons 
                         name="arrow-forward" 
-                        size={18} 
-                        color="rgba(255,255,255,0.7)" 
+                        size={16} 
+                        color="rgba(255,255,255,0.8)" 
                       />
                     </View>
                   </LinearGradient>
@@ -326,57 +443,61 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInUp.delay(300)} className="px-6 mb-6">
           <View className="flex-row justify-between">
             <View 
-              className="flex-1 mr-3 p-6 rounded-3xl items-center"
+              className="flex-1 mr-3 p-5 rounded-2xl items-center"
               style={{ 
-                backgroundColor: THEME_COLORS.surface,
-                shadowColor: THEME_COLORS.accent,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
+                backgroundColor: THEME_COLORS.card,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
                 shadowRadius: 8,
-                elevation: 6
+                elevation: 3,
+                borderWidth: 1,
+                borderColor: THEME_COLORS.border
               }}
             >
               <View 
-                className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
-                style={{ backgroundColor: THEME_COLORS.accent + '20' }}
+                className="w-14 h-14 rounded-xl items-center justify-center mb-3"
+                style={{ backgroundColor: THEME_COLORS.accent + '15' }}
               >
-                <Ionicons name="trophy" size={28} color={THEME_COLORS.accent} />
+                <Ionicons name="trophy" size={24} color={THEME_COLORS.accent} />
               </View>
               <Text 
-                className="text-2xl font-bold"
+                className="text-xl font-bold"
                 style={{ color: THEME_COLORS.accent }}
               >
                 {chorePoints}
               </Text>
-              <Text style={{ color: THEME_COLORS.gray, fontSize: 12 }}>
+              <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12 }}>
                 Chore Points
               </Text>
             </View>
             
             <View 
-              className="flex-1 ml-3 p-6 rounded-3xl items-center"
+              className="flex-1 ml-3 p-5 rounded-2xl items-center"
               style={{ 
-                backgroundColor: THEME_COLORS.surface,
-                shadowColor: THEME_COLORS.secondary,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
+                backgroundColor: THEME_COLORS.card,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
                 shadowRadius: 8,
-                elevation: 6
+                elevation: 3,
+                borderWidth: 1,
+                borderColor: THEME_COLORS.border
               }}
             >
               <View 
-                className="w-16 h-16 rounded-2xl items-center justify-center mb-3"
-                style={{ backgroundColor: THEME_COLORS.secondary + '20' }}
+                className="w-14 h-14 rounded-xl items-center justify-center mb-3"
+                style={{ backgroundColor: THEME_COLORS.secondary + '15' }}
               >
-                <Ionicons name="time" size={28} color={THEME_COLORS.secondary} />
+                <Ionicons name="time" size={24} color={THEME_COLORS.secondary} />
               </View>
               <Text 
-                className="text-2xl font-bold"
+                className="text-xl font-bold"
                 style={{ color: THEME_COLORS.secondary }}
               >
                 {pendingChores}
               </Text>
-              <Text style={{ color: THEME_COLORS.gray, fontSize: 12 }}>
+              <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12 }}>
                 Pending Tasks
               </Text>
             </View>
@@ -388,7 +509,7 @@ export default function DashboardScreen() {
           <Animated.View entering={FadeInUp.delay(400)} className="px-6 mb-6">
             <Text 
               className="text-lg font-bold mb-4"
-              style={{ color: THEME_COLORS.white }}
+              style={{ color: THEME_COLORS.text }}
             >
               📊 Budget Status
             </Text>
@@ -399,17 +520,22 @@ export default function DashboardScreen() {
               return (
                 <View 
                   key={budget.id}
-                  className="p-5 rounded-2xl mb-3"
+                  className="p-4 rounded-xl mb-3"
                   style={{ 
-                    backgroundColor: THEME_COLORS.surface,
+                    backgroundColor: THEME_COLORS.card,
                     borderLeftWidth: 4,
-                    borderLeftColor: isWarning ? THEME_COLORS.error : THEME_COLORS.success
+                    borderLeftColor: isWarning ? THEME_COLORS.error : THEME_COLORS.success,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 4,
+                    elevation: 2
                   }}
                 >
                   <View className="flex-row justify-between items-center mb-3">
                     <Text 
-                      className="font-semibold capitalize text-lg"
-                      style={{ color: THEME_COLORS.white }}
+                      className="font-semibold capitalize"
+                      style={{ color: THEME_COLORS.text }}
                     >
                       {budget.category}
                     </Text>
@@ -420,16 +546,19 @@ export default function DashboardScreen() {
                       ${budget.spent.toFixed(0)}/${budget.limit.toFixed(0)}
                     </Text>
                   </View>
-                  <View className="bg-gray-700 rounded-full h-3 mb-2">
+                  <View 
+                    className="rounded-full h-2 mb-2"
+                    style={{ backgroundColor: THEME_COLORS.divider }}
+                  >
                     <View 
-                      className="h-3 rounded-full"
+                      className="h-2 rounded-full"
                       style={{ 
                         width: `${percentage}%`,
                         backgroundColor: isWarning ? THEME_COLORS.error : THEME_COLORS.success
                       }}
                     />
                   </View>
-                  <Text style={{ color: THEME_COLORS.gray, fontSize: 12 }}>
+                  <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12 }}>
                     {percentage.toFixed(0)}% used
                     {isWarning && ' ⚠️ Over threshold!'}
                   </Text>
@@ -439,39 +568,41 @@ export default function DashboardScreen() {
           </Animated.View>
         )}
 
-        {/* AI Assistant - Enhanced */}
+        {/* AI Assistant */}
         <Animated.View entering={FadeInDown.delay(500)} className="px-6 mb-6">
           <View 
-            className="rounded-3xl p-6"
+            className="rounded-2xl p-5"
             style={{ 
-              backgroundColor: THEME_COLORS.surface,
-              shadowColor: THEME_COLORS.primary,
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.4,
-              shadowRadius: 16,
-              elevation: 10
+              backgroundColor: THEME_COLORS.card,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 6,
+              borderWidth: 1,
+              borderColor: THEME_COLORS.border
             }}
           >
             <View className="flex-row items-center mb-4">
               <LinearGradient
                 colors={[THEME_COLORS.primary, THEME_COLORS.secondary]}
-                className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+                className="w-12 h-12 rounded-xl items-center justify-center mr-4"
               >
-                <Ionicons name="chatbubble-ellipses" size={24} color="white" />
+                <Ionicons name="chatbubble-ellipses" size={20} color="white" />
               </LinearGradient>
               <View className="flex-1">
                 <Text 
                   className="text-lg font-bold"
-                  style={{ color: THEME_COLORS.white }}
+                  style={{ color: THEME_COLORS.text }}
                 >
                   AI Assistant
                 </Text>
-                <Text style={{ color: THEME_COLORS.gray }}>
+                <Text style={{ color: THEME_COLORS.textSecondary }}>
                   Ask me to add expenses, split bills, or get insights
                 </Text>
               </View>
               <Pressable
-                className="rounded-2xl px-6 py-3"
+                className="rounded-xl px-4 py-2"
                 style={{ backgroundColor: THEME_COLORS.primary }}
               >
                 <Text className="text-white font-semibold">Chat</Text>

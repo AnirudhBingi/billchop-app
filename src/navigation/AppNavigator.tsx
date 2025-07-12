@@ -22,6 +22,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import PersonalFinanceModal from '../screens/PersonalFinanceModal';
 import BudgetManagerModal from '../screens/BudgetManagerModal';
 import GoalManagerModal from '../screens/GoalManagerModal';
+import CreateRideScreen from '../screens/CreateRideScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -37,6 +38,8 @@ export type RootStackParamList = {
   PersonalFinance: { initialType?: 'income' | 'expense' };
   BudgetManager: undefined;
   GoalManager: undefined;
+  CreateRide: undefined;
+  RideLog: undefined;
 };
 
 export type TabParamList = {
@@ -206,6 +209,14 @@ export default function AppNavigator() {
           title: 'Goal Manager',
           presentation: 'formSheet',
           sheetAllowedDetents: [0.8, 1.0]
+        }}
+      />
+      <Stack.Screen 
+        name="CreateRide" 
+        component={CreateRideScreen}
+        options={{ 
+          title: 'Log Ride',
+          headerShown: false
         }}
       />
     </Stack.Navigator>
