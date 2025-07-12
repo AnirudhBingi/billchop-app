@@ -511,7 +511,6 @@ export default function PersonalScreen() {
                         🎯 Create Your First Goal
                       </Text>
                     </Pressable>
-                    </View>
                   </View>
                 </GlassCard>
               )}
