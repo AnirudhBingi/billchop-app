@@ -113,9 +113,8 @@ export default function AppNavigator() {
         name="AddExpense" 
         component={AddExpenseScreen}
         options={{ 
-          title: 'Add Expense',
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.7, 1.0]
+          title: 'Split Bill',
+          presentation: 'modal'
         }}
       />
       <Stack.Screen 

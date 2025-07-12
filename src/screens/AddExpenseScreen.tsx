@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, Alert, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
@@ -40,10 +40,35 @@ export default function AddExpenseScreen() {
   const [selectedSplitters, setSelectedSplitters] = useState<string[]>([currentUser?.id || '']);
   const [isDraft, setIsDraft] = useState(false);
 
+  // Reset form when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset form state when screen comes into focus
+      setTitle('');
+      setDescription('');
+      setAmount('');
+      setCategory('other');
+      setSelectedGroupId(groupId || '');
+      setSelectedPayer(currentUser?.id || '');
+      setSelectedSplitters([currentUser?.id || '']);
+      setIsDraft(false);
+    }, [groupId, currentUser?.id])
+  );
+
   const selectedGroup = selectedGroupId ? groups.find(g => g.id === selectedGroupId) : null;
   const availableUsers = selectedGroup 
     ? [currentUser, ...friends].filter(u => u && selectedGroup.members.includes(u.id))
     : [currentUser, ...friends].filter(Boolean);
+
+  // Debug logging
+  console.log('AddExpenseScreen rendering:', {
+    currentUser: !!currentUser,
+    friends: friends.length,
+    groups: groups.length,
+    availableUsers: availableUsers.length,
+    title,
+    selectedGroupId
+  });
 
   const handleSave = () => {
     if (!title.trim() || !amount.trim() || parseFloat(amount) <= 0) {
@@ -133,24 +158,41 @@ export default function AddExpenseScreen() {
     );
   };
 
+  // Ensure we have a fallback user list even if data isn't loaded
+  const safeAvailableUsers = availableUsers.length > 0 ? availableUsers : [
+    { id: '1', name: 'You', email: '', createdAt: new Date() }
+  ];
+
   return (
     <View 
-      className={cn(
-        "flex-1",
-        isDark ? "bg-gray-900" : "bg-gray-50"
-      )}
+      style={{ 
+        flex: 1, 
+        backgroundColor: isDark ? '#111827' : '#F9FAFB' 
+      }}
     >
       <ScrollView 
-        className="flex-1"
+        style={{ flex: 1 }}
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Split With Section */}
-        <GlassCard className="mb-4">
-          <Text className={cn(
-            "text-lg font-semibold mb-4",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
+        <View style={{
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          shadowColor: isDark ? '#FFFFFF' : '#000000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: isDark ? 0.1 : 0.15,
+          shadowRadius: 12,
+          elevation: 8,
+        }}>
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: '600', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 16 
+          }}>
             Split With
           </Text>
           
@@ -215,7 +257,7 @@ export default function AddExpenseScreen() {
               </View>
             </Pressable>
           </View>
-        </GlassCard>
+        </View>
 
         {/* Expense Details */}
         <GlassCard className="mb-4">
@@ -340,7 +382,7 @@ export default function AddExpenseScreen() {
                 backgroundColor: isDark ? "#374151" : "#FFFFFF"
               }}
             >
-              {availableUsers.map(user => (
+              {safeAvailableUsers.map(user => (
                 <Picker.Item key={user.id} label={user.name} value={user.id} />
               ))}
             </Picker>
@@ -356,7 +398,7 @@ export default function AddExpenseScreen() {
             Split between ({selectedSplitters.length} people)
           </Text>
           
-          {availableUsers.map(user => (
+          {safeAvailableUsers.map(user => (
             <SplitterItem key={user.id} user={user} />
           ))}
         </GlassCard>
