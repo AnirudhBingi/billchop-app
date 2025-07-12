@@ -10,17 +10,15 @@ import ExpensesScreen from '../screens/ExpensesScreen';
 import ChoresScreen from '../screens/ChoresScreen';
 import PersonalScreen from '../screens/PersonalScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import AddExpenseScreen from '../screens/AddExpenseScreen';
+import SplitBillScreen from '../screens/SplitBillScreen';
 import AddChoreScreen from '../screens/AddChoreScreen';
 import GroupDetailScreen from '../screens/GroupDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PersonalFinanceModal from '../screens/PersonalFinanceModal';
-import AddSharedExpenseScreen from '../screens/AddSharedExpenseScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
-  AddExpense: { groupId?: string; isPersonal?: boolean; isIncome?: boolean };
-  AddSharedExpense: { groupId?: string };
+  SplitBill: undefined;
   AddChore: { groupId?: string };
   GroupDetail: { groupId: string };
   Settings: undefined;
@@ -110,20 +108,11 @@ export default function AppNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen 
-        name="AddExpense" 
-        component={AddExpenseScreen}
+        name="SplitBill" 
+        component={SplitBillScreen}
         options={{ 
           title: 'Split Bill',
-          presentation: 'modal'
-        }}
-      />
-      <Stack.Screen 
-        name="AddSharedExpense" 
-        component={AddSharedExpenseScreen}
-        options={{ 
-          title: 'Split Bill',
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.8, 1.0]
+          headerShown: true
         }}
       />
       <Stack.Screen 

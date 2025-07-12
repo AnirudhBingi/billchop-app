@@ -284,7 +284,7 @@ export default function ExpensesScreen() {
             title="Split Bill"
             size="sm"
             icon={<Ionicons name="add" size={16} color="white" style={{ marginRight: 4 }} />}
-            onPress={() => navigation.navigate('AddSharedExpense', {})}
+            onPress={() => navigation.navigate('SplitBill')}
           />
         </View>
 

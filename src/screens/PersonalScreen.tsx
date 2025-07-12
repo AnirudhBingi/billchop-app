@@ -181,7 +181,7 @@ export default function PersonalScreen() {
             title="Add"
             size="sm"
             icon={<Ionicons name="add" size={16} color="white" style={{ marginRight: 4 }} />}
-            onPress={() => navigation.navigate('AddExpense', { isPersonal: true })}
+            onPress={() => navigation.navigate('PersonalFinance')}
           />
         </View>
 
@@ -388,7 +388,7 @@ export default function PersonalScreen() {
                   <AnimatedButton
                     title="Add Personal Expense"
                     className="mt-4"
-                    onPress={() => navigation.navigate('AddExpense', { isPersonal: true })}
+                    onPress={() => navigation.navigate('PersonalFinance')}
                   />
                 </View>
               </GlassCard>
@@ -431,7 +431,7 @@ export default function PersonalScreen() {
                   <AnimatedButton
                     title="Add Income"
                     className="mt-4"
-                    onPress={() => navigation.navigate('AddExpense', { isPersonal: true })}
+                    onPress={() => navigation.navigate('PersonalFinance')}
                   />
                 </View>
               </GlassCard>
