@@ -242,52 +242,42 @@ export default function SplitBillScreen() {
             content: [
               {
                 type: "text",
-                text: `Analyze this receipt image carefully and extract ALL visible items. Look for:
-                
-                MERCHANT INFO:
-                - Store name (Walmart, Target, etc.)
-                - Date of purchase
-                - Total amount, tax, tip
-                
-                ALL ITEMS (be thorough):
-                - Product names (even abbreviated ones like "TAL 64OZ" = "Tall 64oz item")
-                - Unit prices for each item
-                - Quantities (default to 1 if not shown)
-                - Item codes/SKUs if visible
-                
-                For categories, be smart about classification:
-                - groceries: food items, beverages, produce, dairy, meat, snacks
-                - food: prepared meals, deli items, restaurant items
-                - entertainment: games, movies, alcohol, books, magazines
-                - shopping: clothes, electronics, household items, cleaning supplies
-                - healthcare: pharmacy items, vitamins, first aid
-                - other: unidentifiable items
-                
-                Return JSON in this EXACT format:
-                {
-                  "merchant": "store name",
-                  "date": "YYYY-MM-DD",
-                  "total": number,
-                  "tax": number,
-                  "tip": number,
-                  "items": [
-                    {
-                      "name": "descriptive product name",
-                      "price": number,
-                      "quantity": number,
-                      "category": "groceries|food|entertainment|shopping|healthcare|other",
-                      "sku": "item code if visible"
-                    }
-                  ]
-                }
-                
-                IMPORTANT: 
-                - Include EVERY line item you can see, even if abbreviated
-                - If price appears to be per unit, multiply by quantity for total
-                - Be generous with item inclusion rather than conservative
-                - For unclear items, make best guess based on context
-                
-                Return ONLY the JSON, no other text.`
+                text: `You are a receipt OCR expert. Analyze this receipt image and extract ALL visible items.
+
+EXTRACT EVERYTHING:
+- Store name, date, totals
+- EVERY line item (be thorough, include all 10+ items if present)
+- Product names (expand abbreviations: "TAL 64OZ" → "Tall 64oz Beverage")
+- All prices and quantities
+- Smart categorization
+
+CATEGORIES:
+- groceries: food, beverages, produce, dairy, meat, snacks
+- food: prepared meals, deli, restaurant items  
+- shopping: household, electronics, cleaning, personal care
+- entertainment: alcohol, games, books, media
+- healthcare: pharmacy, vitamins, medical
+- other: unclear items
+
+CRITICAL: Return ONLY valid JSON with NO extra text, explanations, or formatting.
+
+{
+  "merchant": "store name",
+  "date": "2024-12-07", 
+  "total": 145.49,
+  "tax": 6.69,
+  "tip": 0,
+  "items": [
+    {
+      "name": "descriptive name",
+      "price": 4.99,
+      "quantity": 1,
+      "category": "groceries"
+    }
+  ]
+}
+
+INCLUDE ALL ITEMS - be comprehensive, not conservative.`
               },
               {
                 type: "image_url",
@@ -304,15 +294,31 @@ export default function SplitBillScreen() {
       const analysisText = response.choices[0]?.message?.content || '';
       
       try {
-        const analysisData = JSON.parse(analysisText);
+        // Clean the response to extract JSON
+        let jsonText = analysisText.trim();
+        
+        // Find JSON boundaries
+        const jsonStart = jsonText.indexOf('{');
+        const jsonEnd = jsonText.lastIndexOf('}') + 1;
+        
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          jsonText = jsonText.substring(jsonStart, jsonEnd);
+        }
+        
+        const analysisData = JSON.parse(jsonText);
+        
+        // Validate the response has the expected structure
+        if (!analysisData.items || !Array.isArray(analysisData.items)) {
+          throw new Error('Invalid response structure');
+        }
         
         // Process receipt items
         const processedItems = analysisData.items.map((item: any, index: number) => ({
           id: `receipt_item_${index}`,
-          name: item.name,
+          name: item.name || `Item ${index + 1}`,
           price: parseFloat(item.price) || 0,
           quantity: parseInt(item.quantity) || 1,
-          category: item.category,
+          category: item.category || 'other',
           sku: item.sku || '',
           selected: true,
           splitWith: [currentUser?.id || '']
@@ -333,7 +339,15 @@ export default function SplitBillScreen() {
         
       } catch (parseError) {
         console.error('JSON Parse Error:', parseError);
-        useMockReceiptData();
+        console.error('Raw response:', analysisText);
+        
+        Alert.alert(
+          'Analysis Issue', 
+          'AI response needs processing. Using sample data for demo.',
+          [
+            { text: 'OK', onPress: useMockReceiptData }
+          ]
+        );
       }
       
     } catch (error) {
@@ -351,32 +365,41 @@ export default function SplitBillScreen() {
     }
   };
 
-  // Enhanced mock data based on the Walmart receipt
+  // Enhanced mock data based on the Walmart receipt - comprehensive 15 items
   const useMockReceiptData = () => {
+    console.log('Using mock receipt data for demo');
+    
     const mockItems = [
-      { id: 'item_0', name: 'TAL 64OZ (Beverage)', price: 21.82, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_1', name: 'Blackberry', price: 4.94, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_2', name: 'Blueberries', price: 4.78, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_3', name: 'OIK PRO QT (Protein)', price: 6.53, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_4', name: 'DESI WM YOG (Yogurt)', price: 3.98, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_5', name: 'Tomato Roma (2.70 lb)', price: 3.46, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_6', name: 'BRM ORG OAT (Organic Oats)', price: 6.28, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_7', name: 'Wheat Tart', price: 3.27, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_8', name: 'Red Onion (2 items)', price: 8.48, quantity: 2, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_9', name: 'Butter', price: 4.96, quantity: 1, category: 'groceries', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_10', name: 'Foil', price: 13.46, quantity: 1, category: 'shopping', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_11', name: 'Cheesecake', price: 7.98, quantity: 1, category: 'food', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_12', name: '53Q Touch (Electronics)', price: 18.93, quantity: 1, category: 'shopping', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_13', name: 'Tray Table', price: 11.64, quantity: 1, category: 'shopping', selected: true, splitWith: [currentUser?.id || ''] },
-      { id: 'item_14', name: 'MS FLOORLAM (Flooring)', price: 17.74, quantity: 1, category: 'shopping', selected: true, splitWith: [currentUser?.id || ''] }
+      { id: 'item_0', name: 'TAL 64OZ (Beverage)', price: 21.82, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_1', name: 'Blackberry', price: 4.94, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_2', name: 'Blueberries', price: 4.78, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_3', name: 'OIK PRO QT (Protein Drink)', price: 6.53, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_4', name: 'DESI WM YOG (Yogurt)', price: 3.98, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_5', name: 'Tomato Roma (2.70 lb)', price: 3.46, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_6', name: 'BRM ORG OAT (Organic Oats)', price: 6.28, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_7', name: 'Wheat Tart', price: 3.27, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_8', name: 'Red Onion (3 lbs)', price: 4.24, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_9', name: 'Red Onion (additional)', price: 4.24, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_10', name: 'Butter', price: 4.96, quantity: 1, category: 'groceries' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_11', name: 'Foil', price: 13.46, quantity: 1, category: 'shopping' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_12', name: 'Cheesecake', price: 7.98, quantity: 1, category: 'food' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_13', name: '53Q Touch Device', price: 18.93, quantity: 1, category: 'shopping' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_14', name: 'Tray Table', price: 11.64, quantity: 1, category: 'shopping' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] },
+      { id: 'item_15', name: 'MS FLOORLAM (Flooring)', price: 17.74, quantity: 1, category: 'shopping' as ExpenseCategory, selected: true, splitWith: [currentUser?.id || ''] }
     ];
     
     setReceiptItems(mockItems);
     setSelectedReceiptItems(mockItems.map(item => item.id));
-    setTitle('📸 Walmart - 15 items');
+    setTitle('📸 Walmart Receipt - 16 items');
     setAmount('145.49');
-    setDescription('Receipt from Walmart with 15 items');
+    setDescription('Sample Walmart receipt with comprehensive item breakdown');
     setReceiptMode(true);
+    
+    Alert.alert(
+      'Demo Receipt Loaded!', 
+      `16 items from Walmart receipt ready for selective splitting.`,
+      [{ text: 'OK' }]
+    );
   };
 
   // Image picker without fixed aspect ratio

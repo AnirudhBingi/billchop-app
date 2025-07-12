@@ -309,47 +309,84 @@ export default function ExpensesScreen() {
         </View>
 
         {/* Revolutionary Features Banner */}
-        <GlassCard className="mb-4">
-          <View className="flex-row items-center mb-3">
-            <Text className={cn(
-              "text-base font-semibold flex-1",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
+        <View style={{ 
+          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 3
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={{
+              fontSize: 16,
+              fontWeight: '600',
+              flex: 1,
+              color: isDark ? '#FFFFFF' : '#111827'
+            }}>
               🚀 Revolutionary Features
             </Text>
-            <Text className={cn(
-              "text-xs opacity-60",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
+            <Text style={{
+              fontSize: 12,
+              opacity: 0.6,
+              color: isDark ? '#FFFFFF' : '#111827'
+            }}>
               Try our AI-powered tools
             </Text>
           </View>
-          <View className="flex-row gap-3">
+          <View style={{ flexDirection: 'row', gap: 12 }}>
             <Pressable
               onPress={() => navigation.navigate('SplitBill')}
-              className="flex-1 bg-red-500 p-3 rounded-lg items-center"
+              style={{
+                flex: 1,
+                backgroundColor: '#EF4444',
+                padding: 12,
+                borderRadius: 12,
+                alignItems: 'center'
+              }}
             >
               <Ionicons name="camera" size={20} color="white" />
-              <Text className="text-white font-medium text-xs mt-1">📸 Smart Split</Text>
+              <Text style={{ color: 'white', fontWeight: '500', fontSize: 11, marginTop: 4 }}>
+                📸 Smart Split
+              </Text>
             </Pressable>
             
             <Pressable
               onPress={() => navigation.navigate('Analytics')}
-              className="flex-1 bg-purple-500 p-3 rounded-lg items-center"
+              style={{
+                flex: 1,
+                backgroundColor: '#8B5CF6',
+                padding: 12,
+                borderRadius: 12,
+                alignItems: 'center'
+              }}
             >
               <Ionicons name="analytics" size={20} color="white" />
-              <Text className="text-white font-medium text-xs mt-1">🧠 AI Analytics</Text>
+              <Text style={{ color: 'white', fontWeight: '500', fontSize: 11, marginTop: 4 }}>
+                🧠 AI Analytics
+              </Text>
             </Pressable>
             
             <Pressable
               onPress={() => navigation.navigate('ExpenseHistory')}
-              className="flex-1 bg-indigo-500 p-3 rounded-lg items-center"
+              style={{
+                flex: 1,
+                backgroundColor: '#6366F1',
+                padding: 12,
+                borderRadius: 12,
+                alignItems: 'center'
+              }}
             >
               <Ionicons name="library" size={20} color="white" />
-              <Text className="text-white font-medium text-xs mt-1">📜 Smart History</Text>
+              <Text style={{ color: 'white', fontWeight: '500', fontSize: 11, marginTop: 4 }}>
+                📜 Smart History
+              </Text>
             </Pressable>
           </View>
-        </GlassCard>
+        </View>
 
         {/* Tab Selector */}
         <View className="flex-row bg-gray-200/30 rounded-xl p-1">
