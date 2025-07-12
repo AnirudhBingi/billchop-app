@@ -21,7 +21,7 @@ export default function ExpensesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { currentUser, settings, friends } = useUserStore();
   const { expenses, groups, addExpense, addGroup, getTotalOwed, getTotalOwing } = useExpenseStore();
-  const [selectedTab, setSelectedTab] = useState<'shared' | 'groups'>('shared');
+  const [selectedTab, setSelectedTab] = useState<'balances' | 'groups'>('balances');
   
   const isDark = settings.theme === 'dark';
   
@@ -293,15 +293,15 @@ export default function ExpensesScreen() {
           <Pressable
             className={cn(
               "flex-1 py-2 rounded-lg items-center",
-              selectedTab === 'shared' && "bg-blue-500"
+              selectedTab === 'balances' && "bg-blue-500"
             )}
-            onPress={() => setSelectedTab('shared')}
+            onPress={() => setSelectedTab('balances')}
           >
             <Text className={cn(
               "font-medium",
-              selectedTab === 'shared' ? "text-white" : isDark ? "text-white" : "text-gray-900"
+              selectedTab === 'balances' ? "text-white" : isDark ? "text-white" : "text-gray-900"
             )}>
-              Recent Bills
+              Balances
             </Text>
           </Pressable>
           <Pressable
@@ -315,34 +315,56 @@ export default function ExpensesScreen() {
               "font-medium",
               selectedTab === 'groups' ? "text-white" : isDark ? "text-white" : "text-gray-900"
             )}>
-              My Groups
+              Groups
             </Text>
           </Pressable>
         </View>
       </View>
 
-      {/* Quick Balance Summary */}
+      {/* Overall Balance Summary */}
       <View className="px-4 mb-4">
         <GlassCard>
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 items-center">
+          <View className="mb-4">
+            <Text className={cn(
+              "text-base font-medium",
+              isDark ? "text-white" : "text-gray-900"
+            )}>
+              Overall Balance
+            </Text>
+            <View className="flex-row items-baseline mt-2">
+              <Text className={cn(
+                "text-sm",
+                isDark ? "text-white" : "text-gray-900"
+              )}>
+                You {getTotalOwing(currentUser?.id || '') > getTotalOwed(currentUser?.id || '') ? 'owe' : 'are owed'} 
+              </Text>
+              <Text className={cn(
+                "text-2xl font-bold ml-2",
+                getTotalOwing(currentUser?.id || '') > getTotalOwed(currentUser?.id || '') ? "text-red-500" : "text-green-500"
+              )}>
+                ${Math.abs(getTotalOwed(currentUser?.id || '') - getTotalOwing(currentUser?.id || '')).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+          
+          <View className="flex-row">
+            <View className="flex-1 items-center py-3 bg-green-500/10 rounded-l-xl">
               <Text className={cn(
                 "text-xs opacity-70",
                 isDark ? "text-white" : "text-gray-900"
               )}>
-                Total Owed to You
+                You are owed
               </Text>
               <Text className="text-lg font-bold text-green-500">
                 ${getTotalOwed(currentUser?.id || '').toFixed(2)}
               </Text>
             </View>
-            <View className="w-px h-8 bg-gray-300/30" />
-            <View className="flex-1 items-center">
+            <View className="flex-1 items-center py-3 bg-red-500/10 rounded-r-xl">
               <Text className={cn(
                 "text-xs opacity-70",
                 isDark ? "text-white" : "text-gray-900"
               )}>
-                Total You Owe
+                You owe
               </Text>
               <Text className="text-lg font-bold text-red-500">
                 ${getTotalOwing(currentUser?.id || '').toFixed(2)}
@@ -358,7 +380,7 @@ export default function ExpensesScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Draft Expenses */}
-        {draftExpenses.length > 0 && selectedTab === 'shared' && (
+        {draftExpenses.length > 0 && selectedTab === 'balances' && (
           <View className="mb-4">
             <Text className={cn(
               "text-lg font-semibold mb-3",
@@ -380,23 +402,112 @@ export default function ExpensesScreen() {
         )}
 
         {/* Main Content */}
-        {selectedTab === 'shared' ? (
-          <View>
-            <Text className={cn(
-              "text-lg font-semibold mb-3",
-              isDark ? "text-white" : "text-gray-900"
-            )}>
-              Recent Split Bills
-            </Text>
-            {filteredExpenses.length > 0 ? (
-              filteredExpenses.map((expense) => (
-                <ExpenseItem key={expense.id} expense={expense} />
-              ))
-            ) : (
+        {selectedTab === 'balances' ? (
+          <>
+            {/* Group Balances - Splitwise Style */}
+            {groups.map((group) => {
+              const groupExpenses = expenses.filter(e => e.groupId === group.id && !e.isDraft);
+              if (groupExpenses.length === 0) return null;
+              
+              // Calculate who owes what in this group
+              const balances = new Map<string, number>();
+              
+              groupExpenses.forEach(expense => {
+                const splitAmount = expense.amount / expense.splitBetween.length;
+                
+                // Payer gets positive balance
+                balances.set(expense.paidBy, (balances.get(expense.paidBy) || 0) + expense.amount);
+                
+                // Splitters get negative balance
+                expense.splitBetween.forEach(splitterId => {
+                  balances.set(splitterId, (balances.get(splitterId) || 0) - splitAmount);
+                });
+              });
+              
+              // Find balances involving current user
+              const currentUserBalance = currentUser ? balances.get(currentUser.id) || 0 : 0;
+              const otherBalances = Array.from(balances.entries()).filter(([userId]) => userId !== currentUser?.id);
+              
+              return (
+                <GlassCard key={group.id} className="mb-4">
+                  <View className="flex-row items-center mb-4">
+                    <View className="w-12 h-12 bg-blue-500 rounded-xl items-center justify-center mr-3">
+                      <Ionicons name="home" size={24} color="white" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className={cn(
+                        "font-bold text-lg",
+                        isDark ? "text-white" : "text-gray-900"
+                      )}>
+                        {group.name}
+                      </Text>
+                      <View className="flex-row items-center mt-1">
+                        <Text className={cn(
+                          "text-sm opacity-70 mr-4",
+                          isDark ? "text-white" : "text-gray-900"
+                        )}>
+                          You {currentUserBalance >= 0 ? 'are owed' : 'owe'}
+                        </Text>
+                        <Text className={cn(
+                          "font-bold text-lg",
+                          currentUserBalance >= 0 ? "text-green-500" : "text-red-500"
+                        )}>
+                          ${Math.abs(currentUserBalance).toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  
+                  {otherBalances.map(([userId, balance]) => {
+                    const user = friends.find(f => f.id === userId) || { id: userId, name: 'Unknown', email: '', createdAt: new Date() };
+                    const relationship = currentUserBalance >= 0 && balance < 0 ? 'owes you' : 
+                                       currentUserBalance < 0 && balance > 0 ? 'you owe' : 'settled';
+                    const amount = Math.abs(Math.min(Math.abs(currentUserBalance), Math.abs(balance)));
+                    
+                    if (relationship === 'settled' || amount === 0) return null;
+                    
+                    return (
+                      <View key={userId} className="flex-row items-center justify-between py-3 border-t border-gray-200/20">
+                        <View className="flex-row items-center flex-1">
+                          <View className="w-10 h-10 bg-gray-400 rounded-full items-center justify-center mr-3">
+                            <Text className="text-white font-semibold">
+                              {user.name.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <View>
+                            <Text className={cn(
+                              "font-medium",
+                              isDark ? "text-white" : "text-gray-900"
+                            )}>
+                              {user.name}
+                            </Text>
+                            <Text className={cn(
+                              "text-sm",
+                              relationship === 'owes you' ? "text-green-600" : "text-red-600"
+                            )}>
+                              {relationship}
+                            </Text>
+                          </View>
+                        </View>
+                        
+                        <Text className={cn(
+                          "font-semibold text-lg",
+                          relationship === 'owes you' ? "text-green-500" : "text-red-500"
+                        )}>
+                          ${amount.toFixed(2)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </GlassCard>
+              );
+            })}
+            
+            {groups.length === 0 && (
               <GlassCard>
                 <View className="items-center py-8">
                   <Ionicons 
-                    name="receipt-outline" 
+                    name="people-outline" 
                     size={48} 
                     color={isDark ? "#6B7280" : "#9CA3AF"} 
                   />
@@ -404,13 +515,13 @@ export default function ExpensesScreen() {
                     "text-lg font-medium mt-4",
                     isDark ? "text-white" : "text-gray-900"
                   )}>
-                    No split bills yet
+                    No balances yet
                   </Text>
                   <Text className={cn(
                     "text-sm opacity-70 text-center mt-2",
                     isDark ? "text-white" : "text-gray-900"
                   )}>
-                    Start splitting bills with your roommates and friends
+                    Start splitting bills to see your balances here
                   </Text>
                   <View className="flex-row space-x-2 mt-4">
                     <AnimatedButton
@@ -419,7 +530,6 @@ export default function ExpensesScreen() {
                       size="sm"
                       onPress={() => {
                         console.log('Adding sample data...');
-                        // Force add mock data
                         mockGroups.forEach(group => {
                           console.log('Adding group:', group.name);
                           addGroup(group);
@@ -440,7 +550,7 @@ export default function ExpensesScreen() {
                 </View>
               </GlassCard>
             )}
-          </View>
+          </>
         ) : (
           <View>
             <Text className={cn(
