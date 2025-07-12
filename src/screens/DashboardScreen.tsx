@@ -169,7 +169,23 @@ export default function DashboardScreen() {
             Quick Actions
           </Text>
           
-          {/* First Row - Shared Expenses */}
+          {/* First Row - Revolutionary Features */}
+          <View className="flex-row mb-3">
+            <QuickActionCard
+              title="📸 Smart Receipt"
+              icon="camera-outline"
+              onPress={() => navigation.navigate('ReceiptScan')}
+              color="#EF4444"
+            />
+            <QuickActionCard
+              title="🧠 AI Analytics"
+              icon="analytics-outline"
+              onPress={() => navigation.navigate('Analytics')}
+              color="#8B5CF6"
+            />
+          </View>
+          
+          {/* Second Row - Core Functions */}
           <View className="flex-row mb-3">
             <QuickActionCard
               title="Split Bill"
@@ -178,26 +194,10 @@ export default function DashboardScreen() {
               color="#3B82F6"
             />
             <QuickActionCard
-              title="Settle Up"
-              icon="swap-horizontal-outline"
-              onPress={() => navigation.navigate('MainTabs')}
-              color="#F59E0B"
-            />
-          </View>
-          
-          {/* Second Row - Personal Finance */}
-          <View className="flex-row mb-3">
-            <QuickActionCard
               title="Personal"
               icon="wallet-outline"
               onPress={() => navigation.navigate('PersonalFinance')}
-              color="#8B5CF6"
-            />
-            <QuickActionCard
-              title="Analytics"
-              icon="bar-chart-outline"
-              onPress={() => navigation.navigate('MainTabs')}
-              color="#06B6D4"
+              color="#F59E0B"
             />
           </View>
           

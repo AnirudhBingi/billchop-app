@@ -274,19 +274,82 @@ export default function ExpensesScreen() {
       {/* Header */}
       <View className="px-4 pb-4">
         <View className="flex-row items-center justify-between mb-4">
-          <Text className={cn(
-            "text-2xl font-bold",
-            isDark ? "text-white" : "text-gray-900"
-          )}>
-            Split Bills
-          </Text>
-          <AnimatedButton
-            title="Split Bill"
-            size="sm"
-            icon={<Ionicons name="add" size={16} color="white" style={{ marginRight: 4 }} />}
-            onPress={() => navigation.navigate('SplitBill')}
-          />
+          <View className="flex-1">
+            <Text className={cn(
+              "text-2xl font-bold",
+              isDark ? "text-white" : "text-gray-900"
+            )}>
+              Split Bills
+            </Text>
+            <Text className={cn(
+              "text-sm opacity-70",
+              isDark ? "text-white" : "text-gray-900"
+            )}>
+              AI-powered expense splitting & management
+            </Text>
+          </View>
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => navigation.navigate('ExpenseHistory')}
+              className={cn(
+                "px-3 py-2 rounded-lg items-center justify-center",
+                isDark ? "bg-purple-600" : "bg-purple-500"
+              )}
+            >
+              <Ionicons name="time-outline" size={18} color="white" />
+            </Pressable>
+            
+            <AnimatedButton
+              title="Split"
+              size="sm"
+              icon={<Ionicons name="add" size={16} color="white" style={{ marginRight: 4 }} />}
+              onPress={() => navigation.navigate('SplitBill')}
+            />
+          </View>
         </View>
+
+        {/* Revolutionary Features Banner */}
+        <GlassCard className="mb-4">
+          <View className="flex-row items-center mb-3">
+            <Text className={cn(
+              "text-base font-semibold flex-1",
+              isDark ? "text-white" : "text-gray-900"
+            )}>
+              🚀 Revolutionary Features
+            </Text>
+            <Text className={cn(
+              "text-xs opacity-60",
+              isDark ? "text-white" : "text-gray-900"
+            )}>
+              Try our AI-powered tools
+            </Text>
+          </View>
+          <View className="flex-row gap-3">
+            <Pressable
+              onPress={() => navigation.navigate('ReceiptScan')}
+              className="flex-1 bg-red-500 p-3 rounded-lg items-center"
+            >
+              <Ionicons name="camera" size={20} color="white" />
+              <Text className="text-white font-medium text-xs mt-1">📸 Smart Receipt</Text>
+            </Pressable>
+            
+            <Pressable
+              onPress={() => navigation.navigate('Analytics')}
+              className="flex-1 bg-purple-500 p-3 rounded-lg items-center"
+            >
+              <Ionicons name="analytics" size={20} color="white" />
+              <Text className="text-white font-medium text-xs mt-1">🧠 AI Analytics</Text>
+            </Pressable>
+            
+            <Pressable
+              onPress={() => navigation.navigate('ExpenseHistory')}
+              className="flex-1 bg-indigo-500 p-3 rounded-lg items-center"
+            >
+              <Ionicons name="library" size={20} color="white" />
+              <Text className="text-white font-medium text-xs mt-1">📜 Smart History</Text>
+            </Pressable>
+          </View>
+        </GlassCard>
 
         {/* Tab Selector */}
         <View className="flex-row bg-gray-200/30 rounded-xl p-1">

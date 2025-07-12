@@ -345,18 +345,28 @@ export default function SplitBillScreen() {
             borderWidth: 1,
             borderColor: '#E5E7EB',
             borderRadius: 12,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            minHeight: 50,
+            justifyContent: 'center'
           }}>
             <Picker
               selectedValue={category}
               onValueChange={setCategory}
-              style={{ color: isDark ? '#FFFFFF' : '#111827' }}
+              style={{ 
+                color: isDark ? '#FFFFFF' : '#111827',
+                backgroundColor: 'transparent'
+              }}
+              itemStyle={{
+                color: isDark ? '#FFFFFF' : '#111827',
+                backgroundColor: isDark ? '#374151' : '#F9FAFB'
+              }}
             >
               {EXPENSE_CATEGORIES.map(cat => (
                 <Picker.Item 
                   key={cat} 
                   label={cat.charAt(0).toUpperCase() + cat.slice(1)} 
-                  value={cat} 
+                  value={cat}
+                  color={isDark ? '#FFFFFF' : '#111827'}
                 />
               ))}
             </Picker>
