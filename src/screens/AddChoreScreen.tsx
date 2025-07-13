@@ -626,8 +626,7 @@ export default function AddChoreScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
-        </ScrollView>
+              </View>
       </View>
     </KeyboardAvoidingView>
   );
