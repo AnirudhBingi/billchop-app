@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import { Group } from '../types';
 
 export default function CreateGroupScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { currentUser, settings, friends } = useUserStore();
   const { addGroup } = useExpenseStore();
   const isDark = settings.theme === 'dark';
@@ -248,7 +250,7 @@ export default function CreateGroupScreen() {
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Pressable
-                onPress={() => navigation.navigate('AddFriend' as any)}
+                onPress={() => navigation.navigate('AddFriend')}
                 style={{
                   padding: 8,
                   borderRadius: 8,

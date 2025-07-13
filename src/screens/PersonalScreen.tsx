@@ -13,12 +13,16 @@ import { format, startOfMonth, endOfMonth, isAfter } from 'date-fns';
 import { cn } from '../utils/cn';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import CurrencyService from '../services/CurrencyService';
+import AddExpenseModal from './AddExpenseModal';
+import AddIncomeModal from './AddIncomeModal';
+import CreateBudgetModal from './CreateBudgetModal';
+import CreateGoalModal from './CreateGoalModal';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function PersonalScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { currentUser, settings } = useUserStore();
   const { 
     personalExpenses, 
@@ -36,8 +40,14 @@ export default function PersonalScreen() {
     deleteGoal
   } = useExpenseStore();
   
-  const [selectedMode, setSelectedMode] = useState<'selection' | 'local' | 'home'>('selection');
+  const [selectedMode, setSelectedMode] = useState<'selection' | 'local' | 'home'>('local');
   const [selectedTab, setSelectedTab] = useState<'overview' | 'budget' | 'goals' | 'insights'>('overview');
+  
+  // Modal states
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+  const [showAddIncomeModal, setShowAddIncomeModal] = useState(false);
+  const [showCreateBudgetModal, setShowCreateBudgetModal] = useState(false);
+  const [showCreateGoalModal, setShowCreateGoalModal] = useState(false);
   
   const isDark = settings.theme === 'dark';
   const userId = currentUser?.id || '';
@@ -382,7 +392,7 @@ export default function PersonalScreen() {
             </Text>
             <View className="flex-row gap-3">
               <Pressable
-                onPress={() => navigation.navigate('PersonalFinance', { initialType: 'income', selectedMode })}
+                onPress={() => setShowAddIncomeModal(true)}
                 className="flex-1 bg-green-500 p-4 rounded-xl items-center"
               >
                 <Ionicons name="add-circle" size={20} color="white" />
@@ -390,7 +400,7 @@ export default function PersonalScreen() {
               </Pressable>
               
               <Pressable
-                onPress={() => navigation.navigate('PersonalFinance', { initialType: 'expense', selectedMode })}
+                onPress={() => setShowAddExpenseModal(true)}
                 className="flex-1 bg-red-500 p-4 rounded-xl items-center"
               >
                 <Ionicons name="remove-circle" size={20} color="white" />
@@ -594,7 +604,7 @@ export default function PersonalScreen() {
                     </Text>
                     
                     <Pressable
-                      onPress={() => navigation.navigate('BudgetManager', { selectedMode })}
+                      onPress={() => setShowCreateBudgetModal(true)}
                       className="bg-blue-500 px-6 py-3 rounded-xl self-center"
                     >
                       <Text className="text-white font-semibold">
@@ -684,7 +694,7 @@ export default function PersonalScreen() {
                     </Text>
                     
                     <Pressable
-                      onPress={() => navigation.navigate('GoalManager', { selectedMode })}
+                      onPress={() => setShowCreateGoalModal(true)}
                       className="bg-yellow-500 px-6 py-3 rounded-xl self-center"
                     >
                       <Text className="text-white font-semibold">
@@ -766,6 +776,31 @@ export default function PersonalScreen() {
           )}
         </View>
       </ScrollView>
+      
+      {/* Modals */}
+      <AddExpenseModal
+        visible={showAddExpenseModal}
+        onClose={() => setShowAddExpenseModal(false)}
+        selectedMode={selectedMode}
+      />
+      
+      <AddIncomeModal
+        visible={showAddIncomeModal}
+        onClose={() => setShowAddIncomeModal(false)}
+        selectedMode={selectedMode}
+      />
+      
+      <CreateBudgetModal
+        visible={showCreateBudgetModal}
+        onClose={() => setShowCreateBudgetModal(false)}
+        selectedMode={selectedMode}
+      />
+      
+      <CreateGoalModal
+        visible={showCreateGoalModal}
+        onClose={() => setShowCreateGoalModal(false)}
+        selectedMode={selectedMode}
+      />
     </View>
   );
 }

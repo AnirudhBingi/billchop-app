@@ -19,9 +19,9 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ChoresScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { currentUser, settings, friends } = useUserStore();
-  const { chores, leaderboard, getUserPoints, updateChoreStatus } = useChoreStore();
+  const { chores, leaderboard, getUserPoints, updateChore } = useChoreStore();
   const { groups } = useExpenseStore();
   const [selectedTab, setSelectedTab] = useState<'chores' | 'leaderboard' | 'groups'>('chores');
   
@@ -218,15 +218,14 @@ export default function ChoresScreen() {
               </Pressable>
               
               <AnimatedButton
+                title="Add Chore"
                 onPress={() => navigation.navigate('AddChore', {})}
                 className={cn(
                   "flex-row items-center px-4 py-2 rounded-lg",
                   isDark ? "bg-blue-600" : "bg-blue-500"
                 )}
-              >
-                <Ionicons name="add" size={20} color="white" />
-                <Text className="text-white font-semibold ml-1">Add Chore</Text>
-              </AnimatedButton>
+                icon={<Ionicons name="add" size={20} color="white" />}
+              />
             </View>
           </Animated.View>
 

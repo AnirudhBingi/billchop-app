@@ -117,6 +117,8 @@ export const mockChores: Chore[] = [
     isRecurring: true,
     recurringPattern: 'weekly',
     status: 'pending',
+    createdBy: '1',
+    createdAt: new Date('2024-12-10'),
   },
   {
     id: 'chore2',
@@ -129,6 +131,8 @@ export const mockChores: Chore[] = [
     isRecurring: true,
     recurringPattern: 'weekly',
     status: 'pending',
+    createdBy: '1',
+    createdAt: new Date('2024-12-10'),
   },
   {
     id: 'chore3',
@@ -142,6 +146,8 @@ export const mockChores: Chore[] = [
     status: 'completed',
     completedAt: new Date('2024-12-10'),
     completedBy: '3',
+    createdBy: '1',
+    createdAt: new Date('2024-12-08'),
   },
   {
     id: 'chore4',
@@ -155,6 +161,8 @@ export const mockChores: Chore[] = [
     isRecurring: true,
     recurringPattern: 'weekly',
     status: 'in_progress',
+    createdBy: '1',
+    createdAt: new Date('2024-12-10'),
   },
   {
     id: 'chore5',
@@ -165,6 +173,8 @@ export const mockChores: Chore[] = [
     points: 12,
     isRecurring: false,
     status: 'pending',
+    createdBy: '1',
+    createdAt: new Date('2024-12-10'),
   },
 ];
 

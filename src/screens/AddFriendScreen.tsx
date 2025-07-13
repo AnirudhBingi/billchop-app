@@ -39,6 +39,7 @@ export default function AddFriendScreen() {
       avatar: '',
       isActive: true,
       joinedAt: new Date(),
+      createdAt: new Date(),
       preferences: {
         currency: 'USD',
         language: 'en',

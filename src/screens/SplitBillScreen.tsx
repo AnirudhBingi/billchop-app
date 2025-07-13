@@ -11,6 +11,7 @@ import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { aiAssistant } from '../services/AIAssistantService';
+import { getOpenAIClient } from '../api/openai';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

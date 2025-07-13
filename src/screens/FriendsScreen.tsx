@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import { useExpenseStore } from '../state/useExpenseStore';
 import { useUserStore } from '../state/useUserStore';
-import { calculateFriendBalances, calculateTotalBalances, getUserName } from '../utils/balanceCalculator';
+import { calculateFriendBalances, calculateTotalBalances, getUserName, FriendBalance, BalanceCalculation } from '../utils/balanceCalculator';
 import { Expense, User } from '../types/index';
 
 const FriendsScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { expenses, loading: expensesLoading } = useExpenseStore();
   const { friends, currentUser, fetchFriends, loading: friendsLoading } = useUserStore();
 
