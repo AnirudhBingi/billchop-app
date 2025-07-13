@@ -390,6 +390,91 @@ Consider:
   getHistory(): AIMessage[] {
     return [...this.conversationHistory];
   }
+
+  // Comprehensive AI action handler for app-wide requests
+  async handleAppRequest(userMessage: string, context: ChatContext): Promise<{
+    response: string;
+    actions: Array<{
+      type: 'navigate' | 'add_expense' | 'add_income' | 'add_budget' | 'add_goal' | 'show_balance' | 'split_bill' | 'settle_up' | 'show_analytics';
+      target?: string;
+      data?: any;
+    }>;
+    suggestions: string[];
+  }> {
+    try {
+      const prompt = `You are BillChop AI, a comprehensive financial assistant. The user said: "${userMessage}"
+
+AVAILABLE ACTIONS:
+1. navigate - Navigate to app screens: 'personal', 'split', 'analytics', 'settle_up', 'friends', 'groups', 'chores', 'profile'
+2. add_expense - Add a new expense with {title, amount, category, description}
+3. add_income - Add income with {title, amount, category, description}
+4. add_budget - Create budget with {category, limit, period}
+5. add_goal - Create financial goal with {title, targetAmount, deadline}
+6. show_balance - Show specific balance info
+7. split_bill - Help with bill splitting
+8. settle_up - Help with settlements
+9. show_analytics - Show spending analytics
+
+CURRENT CONTEXT:
+- Balance: $${context.currentBalance.toFixed(2)}
+- You're owed: $${context.totalOwed.toFixed(2)}
+- You owe: $${context.totalOwing.toFixed(2)}
+- Active budgets: ${context.budgets.length}
+- Active goals: ${context.goals.length}
+
+Respond with JSON:
+{
+  "response": "friendly response to user",
+  "actions": [
+    {
+      "type": "action_type",
+      "target": "optional_target",
+      "data": {optional_data}
+    }
+  ],
+  "suggestions": ["suggestion1", "suggestion2"]
+}`;
+
+      const messages: AIMessage[] = [
+        { role: 'system', content: prompt },
+        { role: 'user', content: userMessage }
+      ];
+
+      const response = await getOpenAITextResponse(messages);
+      
+      try {
+        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+      } catch (parseError) {
+        console.error('App Request Parse Error:', parseError);
+      }
+
+      // Fallback response
+      return {
+        response: "I understand you're asking about finances. Let me help you with that!",
+        actions: [],
+        suggestions: [
+          "Add a new expense",
+          "Check your balance",
+          "Split a bill with friends",
+          "View your analytics"
+        ]
+      };
+    } catch (error) {
+      console.error('App Request Error:', error);
+      return {
+        response: "I'm having trouble processing your request right now. Please try again!",
+        actions: [],
+        suggestions: [
+          "Try asking about your balance",
+          "Ask me to add an expense",
+          "Request help with splitting bills"
+        ]
+      };
+    }
+  }
 }
 
 export const aiAssistant = new AIAssistantService();

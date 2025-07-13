@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import KeyboardAwareView from '../components/KeyboardAwareView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -109,18 +110,72 @@ export default function AIChatScreen() {
 
     try {
       const context = buildChatContext();
-      const response = await aiAssistant.chat(text.trim(), context);
+      const result = await aiAssistant.handleAppRequest(text.trim(), context);
 
       // Remove typing indicator and add response
       setMessages(prev => {
         const withoutTyping = prev.filter(m => m.id !== 'typing');
         return [...withoutTyping, {
           id: (Date.now() + 1).toString(),
-          content: response,
+          content: result.response,
           isUser: false,
           timestamp: new Date()
         }];
       });
+
+      // Handle AI actions
+      if (result.actions && result.actions.length > 0) {
+        for (const action of result.actions) {
+          switch (action.type) {
+            case 'navigate':
+              if (action.target === 'personal') {
+                // Navigate to Personal tab
+                Alert.alert('Navigate to Personal', 'Use the Personal tab at the bottom to manage your personal finances!');
+              } else if (action.target === 'split') {
+                navigation.navigate('SplitBill' as any);
+              } else if (action.target === 'analytics') {
+                navigation.navigate('Analytics' as any);
+              } else if (action.target === 'settle_up') {
+                navigation.navigate('SettleUp' as any);
+              }
+              break;
+            case 'add_expense':
+              if (action.data) {
+                Alert.alert('Add Expense', `I'll help you add an expense: ${action.data.title} for $${action.data.amount}`);
+              }
+              break;
+            case 'add_income':
+              if (action.data) {
+                Alert.alert('Add Income', `I'll help you add income: ${action.data.title} for $${action.data.amount}`);
+              }
+              break;
+            case 'show_balance':
+              Alert.alert('Your Balance', `Current Balance: $${context.currentBalance.toFixed(2)}\nYou're owed: $${context.totalOwed.toFixed(2)}\nYou owe: $${context.totalOwing.toFixed(2)}`);
+              break;
+            case 'split_bill':
+              navigation.navigate('SplitBill' as any);
+              break;
+            case 'settle_up':
+              navigation.navigate('SettleUp' as any);
+              break;
+            case 'show_analytics':
+              navigation.navigate('Analytics' as any);
+              break;
+          }
+        }
+      }
+
+      // Add suggestions if provided
+      if (result.suggestions && result.suggestions.length > 0) {
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 2).toString(),
+            content: `💡 Suggestions:\n${result.suggestions.map(s => `• ${s}`).join('\n')}`,
+            isUser: false,
+            timestamp: new Date()
+          }]);
+        }, 1000);
+      }
     } catch (error) {
       console.error('Chat Error:', error);
       setMessages(prev => {
@@ -207,10 +262,7 @@ export default function AIChatScreen() {
   );
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView>
       <View 
         style={{ 
           flex: 1, 
@@ -364,6 +416,6 @@ export default function AIChatScreen() {
           </View>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, Alert, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -504,8 +504,13 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#F3F4F6' }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#F3F4F6' }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
         
         {/* Header */}
         <View style={{ marginBottom: 24 }}>
@@ -1614,6 +1619,8 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
           </Pressable>
         </View>
       </View>
-    </View>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

@@ -534,6 +534,7 @@ export default function PersonalFinanceModal() {
           </Pressable>
         </View>
       </View>
-    </View>
+        </ScrollView>
+      </View>
   );
 }

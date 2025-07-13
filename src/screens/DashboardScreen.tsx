@@ -294,9 +294,12 @@ export default function DashboardScreen() {
             <View className="flex-row justify-between">
               <View className="items-center flex-1">
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
-                  Combined Balance (USD)
+                  Personal Balance
                 </Text>
-                <Pressable onPress={() => navigation.navigate('Analytics' as any)}>
+                <Pressable onPress={() => {
+                  // Show alert to guide user to Personal tab
+                  Alert.alert('Personal Finance', 'Use the Personal tab at the bottom to manage your personal finances!');
+                }}>
                   <Text 
                     className="text-lg font-bold"
                     style={{ color: combinedBalance.netBalance >= 0 ? THEME_COLORS.success : THEME_COLORS.error }}
@@ -310,24 +313,24 @@ export default function DashboardScreen() {
               </View>
               <View className="items-center flex-1">
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
-                  Total Income
+                  You Are Owed
                 </Text>
                 <Text className="text-lg font-bold" style={{ color: THEME_COLORS.success }}>
-                  ${combinedBalance.totalIncome.toFixed(2)}
+                  ${getTotalOwed(userId).toFixed(2)}
                 </Text>
                 <Text style={{ color: THEME_COLORS.textLight, fontSize: 9 }}>
-                  Local + Home
+                  From Friends
                 </Text>
               </View>
               <View className="items-center flex-1">
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
-                  Total Expenses
+                  You Owe
                 </Text>
                 <Text className="text-lg font-bold" style={{ color: THEME_COLORS.error }}>
-                  ${combinedBalance.totalExpenses.toFixed(2)}
+                  ${getTotalOwing(userId).toFixed(2)}
                 </Text>
                 <Text style={{ color: THEME_COLORS.textLight, fontSize: 9 }}>
-                  Local + Home
+                  To Friends
                 </Text>
               </View>
             </View>
@@ -439,7 +442,7 @@ export default function DashboardScreen() {
             </View>
             
             <Pressable
-              onPress={() => navigation.navigate('CreateRide')}
+              onPress={() => navigation.navigate('CreateRide' as any)}
               className="rounded-xl p-3"
               style={{ backgroundColor: THEME_COLORS.primary }}
             >
@@ -655,50 +658,54 @@ export default function DashboardScreen() {
 
       </ScrollView>
 
-      {/* Floating AI Assistant Button */}
+      {/* Floating AI Chat Bar */}
       <Animated.View 
         entering={FadeInUp.delay(600)}
-        className="absolute bottom-20 right-6"
+        className="absolute bottom-24 left-4 right-4"
       >
         <Pressable
-          onPress={() => navigation.navigate('AIChat')}
-          className="rounded-full p-4"
+          onPress={() => navigation.navigate('AIChat' as any)}
+          className="rounded-full p-4 overflow-hidden"
           style={{ 
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.25,
-            shadowRadius: 16,
-            elevation: 12
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 8,
+            borderWidth: 1,
+            borderColor: THEME_COLORS.border
           }}
         >
           <LinearGradient
-            colors={[THEME_COLORS.primary, THEME_COLORS.secondary]}
-            className="w-14 h-14 rounded-full items-center justify-center"
-          >
-            <Ionicons name="sparkles" size={24} color="white" />
-          </LinearGradient>
+            colors={[THEME_COLORS.primary, THEME_COLORS.secondary, THEME_COLORS.accent]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="absolute inset-0 rounded-full"
+          />
+          <View className="flex-row items-center justify-between relative z-10">
+            <View className="flex-row items-center flex-1">
+              <View
+                className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+              >
+                <Ionicons name="sparkles" size={20} color="white" />
+              </View>
+              <View className="flex-1">
+                <Text className="font-semibold text-white">
+                  AI Assistant
+                </Text>
+                <Text className="text-xs text-white opacity-90">
+                  Ask me anything about expenses, budgets, or splitting bills
+                </Text>
+              </View>
+            </View>
+            <Ionicons 
+              name="chevron-forward" 
+              size={20} 
+              color="white" 
+            />
+          </View>
         </Pressable>
-      </Animated.View>
-
-      {/* AI Assistant Quick Tip */}
-      <Animated.View 
-        entering={FadeInUp.delay(700)}
-        className="absolute bottom-28 right-20"
-        style={{
-          backgroundColor: THEME_COLORS.text,
-          borderRadius: 12,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          maxWidth: 150
-        }}
-      >
-        <Text className="text-white text-xs font-medium text-center">
-          💬 Tap for AI help with expenses!
-        </Text>
-        <View 
-          className="absolute -bottom-1 right-6 w-2 h-2 rotate-45"
-          style={{ backgroundColor: THEME_COLORS.text }}
-        />
       </Animated.View>
     </View>
   );

@@ -81,7 +81,7 @@ const SettleUpScreen = () => {
     const id = 'groupId' in item ? item.groupId : item.friendId;
     
     return (
-      <View style={[styles.balanceCard, { backgroundColor: isDark ? '#1F2937' : '#FFFFFF' }]}>
+      <View key={id} style={[styles.balanceCard, { backgroundColor: isDark ? '#1F2937' : '#FFFFFF' }]}>
         <View style={styles.cardHeader}>
           <View style={styles.avatarContainer}>
             <Text style={styles.avatarText}>
