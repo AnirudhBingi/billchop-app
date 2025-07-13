@@ -1618,8 +1618,7 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
             </Text>
           </Pressable>
         </View>
-      </View>
-        </ScrollView>
+              </View>
       </View>
     </KeyboardAvoidingView>
   );
