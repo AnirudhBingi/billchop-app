@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import { Budget, ExpenseCategory } from '../types';
-import { Picker } from '@react-native-picker/picker';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type RouteProp = NativeStackScreenProps<RootStackParamList, 'BudgetManager'>['route'];
 
 const BUDGET_CATEGORIES: ExpenseCategory[] = [
   'food', 'transportation', 'utilities', 'entertainment', 'shopping',
@@ -21,16 +21,37 @@ const BUDGET_CATEGORIES: ExpenseCategory[] = [
 export default function BudgetManagerModal() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProp>();
   const { currentUser, settings } = useUserStore();
   const { addBudget } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
   const userId = currentUser?.id || '';
+  // Defensive param handling
+  const selectedMode = (route.params?.selectedMode === 'local' || route.params?.selectedMode === 'home') ? route.params.selectedMode : 'local';
+
+  // Debug logging
+  console.log('BudgetManagerModal - Route params:', route.params);
+  console.log('BudgetManagerModal - Selected mode:', selectedMode);
+
+  if (!route.params || !route.params.selectedMode) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' }}>
+        <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 18 }}>Error: Missing navigation parameters. Please return and try again.</Text>
+      </View>
+    );
+  }
   
   const [category, setCategory] = useState<ExpenseCategory>('food');
   const [limit, setLimit] = useState('');
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [alertThreshold, setAlertThreshold] = useState('80');
+
+  // Currency setup based on selected mode
+  const localCurrency = { code: 'USD', symbol: '$' };
+  const homeCurrency = { code: 'INR', symbol: '₹' };
+  const currentCurrency = selectedMode === 'local' ? localCurrency : homeCurrency;
+  const isHomeCountry = selectedMode === 'home';
 
   const handleSave = () => {
     if (!limit.trim() || parseFloat(limit) <= 0) {
@@ -43,9 +64,9 @@ export default function BudgetManagerModal() {
       category,
       limit: parseFloat(limit),
       spent: 0,
-      currency: 'USD',
+      currency: currentCurrency.code,
       period,
-      isHomeCountry: false, // TODO: Make this dynamic based on selected mode
+      isHomeCountry,
       userId,
       createdAt: new Date(),
       alertThreshold: parseFloat(alertThreshold),
@@ -95,11 +116,11 @@ export default function BudgetManagerModal() {
             fontSize: 16, 
             color: isDark ? '#9CA3AF' : '#6B7280'
           }}>
-            Set spending limits and get smart alerts
+            Set spending limits for different categories • {currentCurrency.symbol} {currentCurrency.code}
           </Text>
         </Animated.View>
 
-        {/* Budget Details */}
+        {/* Category Selection */}
         <Animated.View 
           entering={FadeInUp.delay(100)}
           style={{ 
@@ -120,7 +141,65 @@ export default function BudgetManagerModal() {
             color: isDark ? '#FFFFFF' : '#111827',
             marginBottom: 16
           }}>
-            Budget Configuration
+            Category
+          </Text>
+          
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {BUDGET_CATEGORIES.map(cat => (
+              <Pressable
+                key={cat}
+                onPress={() => setCategory(cat)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  backgroundColor: category === cat ? '#3B82F6' : 'transparent',
+                  borderWidth: 1,
+                  borderColor: category === cat ? '#3B82F6' : '#E5E7EB',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                <Ionicons 
+                  name={getCategoryIcon(cat) as any} 
+                  size={16} 
+                  color={category === cat ? 'white' : isDark ? '#FFFFFF' : '#111827'} 
+                />
+                <Text style={{
+                  fontSize: 12,
+                  fontWeight: '600',
+                  color: category === cat ? 'white' : isDark ? '#FFFFFF' : '#111827'
+                }}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Budget Details */}
+        <Animated.View 
+          entering={FadeInUp.delay(200)}
+          style={{ 
+            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 3
+          }}
+        >
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: '600', 
+            color: isDark ? '#FFFFFF' : '#111827',
+            marginBottom: 16
+          }}>
+            Budget Details
           </Text>
           
           <View style={{ marginBottom: 16 }}>
@@ -130,43 +209,7 @@ export default function BudgetManagerModal() {
               color: isDark ? '#FFFFFF' : '#111827',
               marginBottom: 8
             }}>
-              Category
-            </Text>
-            <View style={{
-              backgroundColor: isDark ? '#374151' : '#F9FAFB',
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-              borderRadius: 12,
-              overflow: 'hidden'
-            }}>
-              <Picker
-                selectedValue={category}
-                onValueChange={setCategory}
-                style={{ 
-                  color: isDark ? '#FFFFFF' : '#111827',
-                  backgroundColor: 'transparent'
-                }}
-              >
-                {BUDGET_CATEGORIES.map(cat => (
-                  <Picker.Item 
-                    key={cat} 
-                    label={`${cat.charAt(0).toUpperCase() + cat.slice(1)}`} 
-                    value={cat}
-                    color={isDark ? '#FFFFFF' : '#111827'}
-                  />
-                ))}
-              </Picker>
-            </View>
-          </View>
-
-          <View style={{ marginBottom: 16 }}>
-            <Text style={{ 
-              fontSize: 16, 
-              fontWeight: '500', 
-              color: isDark ? '#FFFFFF' : '#111827',
-              marginBottom: 8
-            }}>
-              Budget Limit
+              Monthly Limit *
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={{ 
@@ -175,12 +218,12 @@ export default function BudgetManagerModal() {
                 color: '#3B82F6',
                 marginRight: 8
               }}>
-                $
+                {currentCurrency.symbol}
               </Text>
               <TextInput
                 value={limit}
                 onChangeText={setLimit}
-                placeholder="500.00"
+                placeholder="0.00"
                 keyboardType="decimal-pad"
                 placeholderTextColor="#9CA3AF"
                 style={{
@@ -215,19 +258,19 @@ export default function BudgetManagerModal() {
                   style={{
                     flex: 1,
                     padding: 12,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: period === p ? '#3B82F6' : '#E5E7EB',
+                    borderRadius: 12,
                     backgroundColor: period === p ? '#3B82F6' : 'transparent',
+                    borderWidth: 1,
+                    borderColor: period === p ? '#3B82F6' : '#E5E7EB',
                     alignItems: 'center'
                   }}
                 >
                   <Text style={{
+                    fontSize: 12,
                     fontWeight: '600',
-                    color: period === p ? 'white' : isDark ? '#FFFFFF' : '#111827',
-                    textTransform: 'capitalize'
+                    color: period === p ? 'white' : isDark ? '#FFFFFF' : '#111827'
                   }}>
-                    {p}
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
                   </Text>
                 </Pressable>
               ))}
@@ -247,7 +290,7 @@ export default function BudgetManagerModal() {
               value={alertThreshold}
               onChangeText={setAlertThreshold}
               placeholder="80"
-              keyboardType="number-pad"
+              keyboardType="numeric"
               placeholderTextColor="#9CA3AF"
               style={{
                 backgroundColor: isDark ? '#374151' : '#F9FAFB',
@@ -259,67 +302,56 @@ export default function BudgetManagerModal() {
                 color: isDark ? '#FFFFFF' : '#111827'
               }}
             />
-            <Text style={{ 
-              fontSize: 12, 
-              color: isDark ? '#9CA3AF' : '#6B7280',
-              marginTop: 4
-            }}>
-              Get notified when you reach this percentage of your budget
-            </Text>
           </View>
         </Animated.View>
 
         {/* Preview */}
         {limit.trim() && (
           <Animated.View 
-            entering={FadeInUp.delay(200)}
+            entering={FadeInUp.delay(300)}
             style={{ 
-              backgroundColor: '#EBF8FF',
+              backgroundColor: '#ECFDF5',
               borderRadius: 16,
               padding: 20,
               marginBottom: 20,
               borderWidth: 1,
-              borderColor: '#3B82F6'
+              borderColor: '#10B981'
             }}
           >
             <Text style={{ 
               fontSize: 16, 
               fontWeight: '600', 
-              color: '#1E3A8A',
+              color: isDark ? '#FFFFFF' : '#111827',
               marginBottom: 12
             }}>
               Budget Preview
             </Text>
             
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <Ionicons 
-                name={getCategoryIcon(category) as any} 
-                size={24} 
-                color="#3B82F6" 
-                style={{ marginRight: 12 }}
-              />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ 
                   fontSize: 18, 
                   fontWeight: 'bold',
-                  color: '#1E3A8A',
-                  textTransform: 'capitalize'
+                  color: isDark ? '#FFFFFF' : '#111827',
+                  marginBottom: 4
                 }}>
-                  {category} Budget
+                  {category.charAt(0).toUpperCase() + category.slice(1)} Budget
                 </Text>
                 <Text style={{ 
-                  fontSize: 14, 
-                  color: '#3B82F6'
+                  fontSize: 12, 
+                  color: '#10B981',
+                  fontWeight: '600'
                 }}>
                   {period.charAt(0).toUpperCase() + period.slice(1)} • Alert at {alertThreshold}%
                 </Text>
               </View>
+              
               <Text style={{ 
                 fontSize: 24, 
                 fontWeight: 'bold',
-                color: '#3B82F6'
+                color: '#10B981'
               }}>
-                ${parseFloat(limit || '0').toFixed(2)}
+                {currentCurrency.symbol}{parseFloat(limit || '0').toFixed(2)}
               </Text>
             </View>
           </Animated.View>

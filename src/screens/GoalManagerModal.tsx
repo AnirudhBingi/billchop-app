@@ -2,44 +2,71 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import { FinancialGoal } from '../types';
-import { Picker } from '@react-native-picker/picker';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-const GOAL_CATEGORIES = [
-  { id: 'savings', name: 'Emergency Savings', icon: 'shield-checkmark', color: '#10B981' },
-  { id: 'travel', name: 'Travel & Vacation', icon: 'airplane', color: '#3B82F6' },
-  { id: 'education', name: 'Education', icon: 'school', color: '#8B5CF6' },
-  { id: 'shopping', name: 'Shopping & Gadgets', icon: 'bag', color: '#EC4899' },
-  { id: 'investment', name: 'Investment', icon: 'trending-up', color: '#F59E0B' },
-  { id: 'healthcare', name: 'Healthcare', icon: 'medical', color: '#EF4444' },
-  { id: 'home', name: 'Home & Living', icon: 'home', color: '#06B6D4' },
-  { id: 'other', name: 'Other Goals', icon: 'star', color: '#6B7280' }
-];
+type RouteProp = NativeStackScreenProps<RootStackParamList, 'GoalManager'>['route'];
 
 const GOAL_TEMPLATES = [
-  { title: 'Emergency Fund', amount: 5000, category: 'savings', months: 12 },
-  { title: 'New Laptop', amount: 1500, category: 'shopping', months: 6 },
-  { title: 'Summer Vacation', amount: 3000, category: 'travel', months: 8 },
-  { title: 'Course Certification', amount: 800, category: 'education', months: 4 },
-  { title: 'Investment Portfolio', amount: 10000, category: 'investment', months: 18 }
+  {
+    title: 'Emergency Fund',
+    description: 'Save 3-6 months of expenses for emergencies',
+    targetAmount: 5000,
+    category: 'savings',
+    months: 12
+  },
+  {
+    title: 'Travel Fund',
+    description: 'Save for your next vacation or trip home',
+    targetAmount: 2000,
+    category: 'travel',
+    months: 6
+  },
+  {
+    title: 'New Laptop',
+    description: 'Save for a new computer or device',
+    targetAmount: 1500,
+    category: 'technology',
+    months: 8
+  },
+  {
+    title: 'Graduation Gift',
+    description: 'Save for a special graduation celebration',
+    targetAmount: 1000,
+    category: 'celebration',
+    months: 4
+  }
 ];
 
 export default function GoalManagerModal() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProp>();
   const { currentUser, settings } = useUserStore();
   const { addGoal } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
   const userId = currentUser?.id || '';
+  // Defensive param handling
+  const selectedMode = (route.params?.selectedMode === 'local' || route.params?.selectedMode === 'home') ? route.params.selectedMode : 'local';
+
+  // Debug logging
+  console.log('GoalManagerModal - Route params:', route.params);
+  console.log('GoalManagerModal - Selected mode:', selectedMode);
+
+  if (!route.params || !route.params.selectedMode) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' }}>
+        <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 18 }}>Error: Missing navigation parameters. Please return and try again.</Text>
+      </View>
+    );
+  }
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -48,6 +75,12 @@ export default function GoalManagerModal() {
   const [targetMonths, setTargetMonths] = useState('12');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+
+  // Currency setup based on selected mode
+  const localCurrency = { code: 'USD', symbol: '$' };
+  const homeCurrency = { code: 'INR', symbol: '₹' };
+  const currentCurrency = selectedMode === 'local' ? localCurrency : homeCurrency;
+  const isHomeCountry = selectedMode === 'home';
 
   const handleSave = () => {
     if (!title.trim() || !targetAmount.trim() || parseFloat(targetAmount) <= 0) {
@@ -64,10 +97,10 @@ export default function GoalManagerModal() {
       description: description.trim(),
       targetAmount: parseFloat(targetAmount),
       currentAmount: 0,
-      currency: 'USD',
+      currency: currentCurrency.code,
       category,
       targetDate,
-      isHomeCountry: false, // TODO: Make this dynamic
+      isHomeCountry,
       userId,
       createdAt: new Date(),
       isCompleted: false,
@@ -85,18 +118,12 @@ export default function GoalManagerModal() {
 
   const applyTemplate = (template: typeof GOAL_TEMPLATES[0]) => {
     setTitle(template.title);
-    setTargetAmount(template.amount.toString());
+    setDescription(template.description);
+    setTargetAmount(template.targetAmount.toString());
     setCategory(template.category);
     setTargetMonths(template.months.toString());
     setSelectedTemplate(template.title);
-    setDescription(`Save ${template.amount} for ${template.title.toLowerCase()} over ${template.months} months`);
   };
-
-  const getCategoryData = (catId: string) => {
-    return GOAL_CATEGORIES.find(c => c.id === catId) || GOAL_CATEGORIES[0];
-  };
-
-  const monthlyTarget = targetAmount ? (parseFloat(targetAmount) / parseInt(targetMonths || '1')).toFixed(2) : '0';
 
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#F3F4F6', paddingTop: insets.top }}>
@@ -110,17 +137,17 @@ export default function GoalManagerModal() {
             color: isDark ? '#FFFFFF' : '#111827',
             marginBottom: 8
           }}>
-            🎯 Create Financial Goal
+            🎯 Create Goal
           </Text>
           <Text style={{ 
             fontSize: 16, 
             color: isDark ? '#9CA3AF' : '#6B7280'
           }}>
-            Set targets and track your progress
+            Set financial goals and track your progress • {currentCurrency.symbol} {currentCurrency.code}
           </Text>
         </Animated.View>
 
-        {/* Quick Templates */}
+        {/* Goal Templates */}
         <Animated.View 
           entering={FadeInUp.delay(100)}
           style={{ 
@@ -141,55 +168,50 @@ export default function GoalManagerModal() {
             color: isDark ? '#FFFFFF' : '#111827',
             marginBottom: 16
           }}>
-            ⚡ Quick Start Templates
+            Quick Templates
           </Text>
           
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              {GOAL_TEMPLATES.map(template => (
-                <Pressable
-                  key={template.title}
-                  onPress={() => applyTemplate(template)}
-                  style={{
-                    width: 160,
-                    padding: 16,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: selectedTemplate === template.title ? '#3B82F6' : '#E5E7EB',
-                    backgroundColor: selectedTemplate === template.title ? '#EBF8FF' : 'transparent'
-                  }}
-                >
-                  <Ionicons 
-                    name={getCategoryData(template.category).icon as any} 
-                    size={24} 
-                    color={getCategoryData(template.category).color} 
-                    style={{ marginBottom: 8 }}
-                  />
-                  <Text style={{
-                    fontWeight: '600',
-                    color: isDark ? '#FFFFFF' : '#111827',
-                    marginBottom: 4
+          <View style={{ gap: 12 }}>
+            {GOAL_TEMPLATES.map(template => (
+              <Pressable
+                key={template.title}
+                onPress={() => applyTemplate(template)}
+                style={{
+                  padding: 16,
+                  borderRadius: 12,
+                  backgroundColor: selectedTemplate === template.title ? '#FEF3C7' : isDark ? '#374151' : '#F9FAFB',
+                  borderWidth: 1,
+                  borderColor: selectedTemplate === template.title ? '#F59E0B' : '#E5E7EB'
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ 
+                      fontSize: 16, 
+                      fontWeight: '600',
+                      color: isDark ? '#FFFFFF' : '#111827',
+                      marginBottom: 4
+                    }}>
+                      {template.title}
+                    </Text>
+                    <Text style={{ 
+                      fontSize: 12, 
+                      color: isDark ? '#9CA3AF' : '#6B7280'
+                    }}>
+                      {template.description}
+                    </Text>
+                  </View>
+                  <Text style={{ 
+                    fontSize: 16, 
+                    fontWeight: 'bold',
+                    color: '#F59E0B'
                   }}>
-                    {template.title}
+                    {currentCurrency.symbol}{template.targetAmount.toLocaleString()}
                   </Text>
-                  <Text style={{
-                    fontSize: 12,
-                    color: isDark ? '#9CA3AF' : '#6B7280',
-                    marginBottom: 8
-                  }}>
-                    ${template.amount} • {template.months} months
-                  </Text>
-                  <Text style={{
-                    fontSize: 10,
-                    color: '#3B82F6',
-                    fontWeight: '500'
-                  }}>
-                    ${(template.amount / template.months).toFixed(0)}/month
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
+                </View>
+              </Pressable>
+            ))}
+          </View>
         </Animated.View>
 
         {/* Goal Details */}
@@ -213,7 +235,7 @@ export default function GoalManagerModal() {
             color: isDark ? '#FFFFFF' : '#111827',
             marginBottom: 16
           }}>
-            Goal Configuration
+            Goal Details
           </Text>
           
           <View style={{ marginBottom: 16 }}>
@@ -228,7 +250,7 @@ export default function GoalManagerModal() {
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder="e.g., Emergency Fund, New iPhone, Vacation"
+              placeholder="e.g., Emergency Fund, Travel Savings"
               placeholderTextColor="#9CA3AF"
               style={{
                 backgroundColor: isDark ? '#374151' : '#F9FAFB',
@@ -255,15 +277,15 @@ export default function GoalManagerModal() {
               <Text style={{ 
                 fontSize: 18, 
                 fontWeight: 'bold', 
-                color: '#10B981',
+                color: '#F59E0B',
                 marginRight: 8
               }}>
-                $
+                {currentCurrency.symbol}
               </Text>
               <TextInput
                 value={targetAmount}
                 onChangeText={setTargetAmount}
-                placeholder="5000.00"
+                placeholder="0.00"
                 keyboardType="decimal-pad"
                 placeholderTextColor="#9CA3AF"
                 style={{
@@ -290,30 +312,29 @@ export default function GoalManagerModal() {
             }}>
               Category
             </Text>
-            <View style={{
-              backgroundColor: isDark ? '#374151' : '#F9FAFB',
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-              borderRadius: 12,
-              overflow: 'hidden'
-            }}>
-              <Picker
-                selectedValue={category}
-                onValueChange={setCategory}
-                style={{ 
-                  color: isDark ? '#FFFFFF' : '#111827',
-                  backgroundColor: 'transparent'
-                }}
-              >
-                {GOAL_CATEGORIES.map(cat => (
-                  <Picker.Item 
-                    key={cat.id} 
-                    label={cat.name} 
-                    value={cat.id}
-                    color={isDark ? '#FFFFFF' : '#111827'}
-                  />
-                ))}
-              </Picker>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {['savings', 'travel', 'technology', 'education', 'celebration', 'other'].map(cat => (
+                <Pressable
+                  key={cat}
+                  onPress={() => setCategory(cat)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    backgroundColor: category === cat ? '#F59E0B' : 'transparent',
+                    borderWidth: 1,
+                    borderColor: category === cat ? '#F59E0B' : '#E5E7EB'
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    color: category === cat ? 'white' : isDark ? '#FFFFFF' : '#111827'
+                  }}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </View>
 
@@ -324,34 +345,33 @@ export default function GoalManagerModal() {
               color: isDark ? '#FFFFFF' : '#111827',
               marginBottom: 8
             }}>
-              Time Frame (Months)
+              Target Months
             </Text>
-            <TextInput
-              value={targetMonths}
-              onChangeText={setTargetMonths}
-              placeholder="12"
-              keyboardType="number-pad"
-              placeholderTextColor="#9CA3AF"
-              style={{
-                backgroundColor: isDark ? '#374151' : '#F9FAFB',
-                borderWidth: 1,
-                borderColor: '#E5E7EB',
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 16,
-                color: isDark ? '#FFFFFF' : '#111827'
-              }}
-            />
-            {targetAmount && targetMonths && (
-              <Text style={{ 
-                fontSize: 12, 
-                color: '#10B981',
-                marginTop: 4,
-                fontWeight: '500'
-              }}>
-                💡 You'll need to save ${monthlyTarget} per month
-              </Text>
-            )}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {['3', '6', '12', '18', '24'].map(months => (
+                <Pressable
+                  key={months}
+                  onPress={() => setTargetMonths(months)}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 12,
+                    backgroundColor: targetMonths === months ? '#F59E0B' : 'transparent',
+                    borderWidth: 1,
+                    borderColor: targetMonths === months ? '#F59E0B' : '#E5E7EB',
+                    alignItems: 'center'
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    color: targetMonths === months ? 'white' : isDark ? '#FFFFFF' : '#111827'
+                  }}>
+                    {months} months
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
 
           <View style={{ marginBottom: 16 }}>
@@ -361,7 +381,7 @@ export default function GoalManagerModal() {
               color: isDark ? '#FFFFFF' : '#111827',
               marginBottom: 8
             }}>
-              Priority Level
+              Priority
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {(['low', 'medium', 'high'] as const).map(p => (
@@ -371,23 +391,19 @@ export default function GoalManagerModal() {
                   style={{
                     flex: 1,
                     padding: 12,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: priority === p ? 
-                      (p === 'high' ? '#EF4444' : p === 'medium' ? '#F59E0B' : '#10B981') : '#E5E7EB',
-                    backgroundColor: priority === p ? 
-                      (p === 'high' ? '#FEF2F2' : p === 'medium' ? '#FEF3C7' : '#ECFDF5') : 'transparent',
+                    borderRadius: 12,
+                    backgroundColor: priority === p ? '#F59E0B' : 'transparent',
+                    borderWidth: 1,
+                    borderColor: priority === p ? '#F59E0B' : '#E5E7EB',
                     alignItems: 'center'
                   }}
                 >
                   <Text style={{
+                    fontSize: 12,
                     fontWeight: '600',
-                    color: priority === p ? 
-                      (p === 'high' ? '#EF4444' : p === 'medium' ? '#F59E0B' : '#10B981') : 
-                      (isDark ? '#FFFFFF' : '#111827'),
-                    textTransform: 'capitalize'
+                    color: priority === p ? 'white' : isDark ? '#FFFFFF' : '#111827'
                   }}>
-                    {p}
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
                   </Text>
                 </Pressable>
               ))}
@@ -429,66 +445,48 @@ export default function GoalManagerModal() {
           <Animated.View 
             entering={FadeInUp.delay(300)}
             style={{ 
-              backgroundColor: '#ECFDF5',
+              backgroundColor: '#FEF3C7',
               borderRadius: 16,
               padding: 20,
               marginBottom: 20,
               borderWidth: 1,
-              borderColor: '#10B981'
+              borderColor: '#F59E0B'
             }}
           >
             <Text style={{ 
               fontSize: 16, 
               fontWeight: '600', 
-              color: '#047857',
+              color: isDark ? '#FFFFFF' : '#111827',
               marginBottom: 12
             }}>
-              🎯 Goal Preview
+              Goal Preview
             </Text>
             
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <Ionicons 
-                name={getCategoryData(category).icon as any} 
-                size={24} 
-                color={getCategoryData(category).color} 
-                style={{ marginRight: 12 }}
-              />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ 
                   fontSize: 18, 
                   fontWeight: 'bold',
-                  color: '#047857',
+                  color: isDark ? '#FFFFFF' : '#111827',
                   marginBottom: 4
                 }}>
                   {title}
                 </Text>
                 <Text style={{ 
-                  fontSize: 14, 
-                  color: '#059669'
+                  fontSize: 12, 
+                  color: '#F59E0B',
+                  fontWeight: '600'
                 }}>
-                  {getCategoryData(category).name} • {priority} priority
+                  {category.charAt(0).toUpperCase() + category.slice(1)} • {targetMonths} months • {priority.charAt(0).toUpperCase() + priority.slice(1)} priority
                 </Text>
               </View>
+              
               <Text style={{ 
                 fontSize: 24, 
                 fontWeight: 'bold',
-                color: '#047857'
+                color: '#F59E0B'
               }}>
-                ${parseFloat(targetAmount || '0').toFixed(2)}
-              </Text>
-            </View>
-            
-            <View style={{ 
-              backgroundColor: '#DCFCE7', 
-              borderRadius: 8, 
-              padding: 12 
-            }}>
-              <Text style={{ 
-                fontSize: 12, 
-                color: '#047857',
-                textAlign: 'center'
-              }}>
-                💰 Save ${monthlyTarget}/month for {targetMonths} months
+                {currentCurrency.symbol}{parseFloat(targetAmount || '0').toFixed(2)}
               </Text>
             </View>
           </Animated.View>
@@ -536,7 +534,7 @@ export default function GoalManagerModal() {
               flex: 1,
               padding: 16,
               borderRadius: 12,
-              backgroundColor: '#10B981',
+              backgroundColor: '#F59E0B',
               alignItems: 'center'
             }}
           >

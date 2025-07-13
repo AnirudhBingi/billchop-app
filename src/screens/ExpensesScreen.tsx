@@ -21,7 +21,7 @@ export default function ExpensesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { currentUser, settings, friends } = useUserStore();
   const { expenses, groups, addExpense, addGroup, getTotalOwed, getTotalOwing } = useExpenseStore();
-  const [selectedTab, setSelectedTab] = useState<'balances' | 'groups'>('balances');
+  const [selectedTab, setSelectedTab] = useState<'balances' | 'groups' | 'friends'>('balances');
   
   const isDark = settings.theme === 'dark';
   
@@ -189,73 +189,52 @@ export default function ExpensesScreen() {
     
     return (
       <Pressable onPress={() => navigation.navigate('GroupDetail', { groupId: group.id })}>
-        <GlassCard className="mb-3">
-          <View className="flex-row items-start justify-between">
-            <View className="flex-1">
-              <View className="flex-row items-center mb-1">
-                <Ionicons name="home-outline" size={16} color="#3B82F6" />
+        <GlassCard className="mb-2">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1">
+              <View className={cn(
+                "w-10 h-10 rounded-lg items-center justify-center mr-3",
+                isDark ? "bg-blue-600" : "bg-blue-500"
+              )}>
+                <Ionicons name="home" size={20} color="white" />
+              </View>
+              <View className="flex-1">
                 <Text className={cn(
-                  "font-semibold text-base ml-2",
+                  "font-semibold text-base",
                   isDark ? "text-white" : "text-gray-900"
                 )}>
                   {group.name}
                 </Text>
-              </View>
-              
-              {group.description && (
-                <Text className={cn(
-                  "text-sm opacity-70 mt-1",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  {group.description}
-                </Text>
-              )}
-              
-              <View className="flex-row items-center mt-2">
-                <Ionicons name="people-outline" size={14} color={isDark ? "#9CA3AF" : "#6B7280"} />
-                <Text className={cn(
-                  "text-xs opacity-60 ml-1",
-                  isDark ? "text-white" : "text-gray-900"
-                )}>
-                  {group.members.length} roommates • {groupExpenses.length} bills split
-                </Text>
-              </View>
-              
-              {/* Balance indicator */}
-              {netBalance !== 0 && (
-                <View className={cn(
-                  "px-2 py-1 rounded-full mt-2 self-start",
-                  netBalance > 0 ? "bg-green-500/20" : "bg-red-500/20"
-                )}>
+                <View className="flex-row items-center mt-1">
                   <Text className={cn(
-                    "text-xs font-medium",
-                    netBalance > 0 ? "text-green-500" : "text-red-500"
+                    "text-xs opacity-70 mr-3",
+                    isDark ? "text-white" : "text-gray-900"
                   )}>
-                    {netBalance > 0 ? `You're owed ${netBalance.toFixed(2)}` : `You owe ${Math.abs(netBalance).toFixed(2)}`}
+                    {group.members.length} members
+                  </Text>
+                  <Text className={cn(
+                    "text-xs opacity-70",
+                    isDark ? "text-white" : "text-gray-900"
+                  )}>
+                    {groupExpenses.length} expenses
                   </Text>
                 </View>
-              )}
+              </View>
             </View>
             
             <View className="items-end">
               <Text className={cn(
                 "text-lg font-bold",
-                isDark ? "text-white" : "text-gray-900"
+                netBalance >= 0 ? "text-green-500" : "text-red-500"
               )}>
-                ${totalAmount.toFixed(2)}
+                ${Math.abs(netBalance).toFixed(2)}
               </Text>
               <Text className={cn(
                 "text-xs opacity-60",
                 isDark ? "text-white" : "text-gray-900"
               )}>
-                Total spent
+                {netBalance >= 0 ? 'Owed' : 'Owes'}
               </Text>
-              <Ionicons 
-                name="chevron-forward" 
-                size={16} 
-                color={isDark ? "#9CA3AF" : "#6B7280"}
-                style={{ marginTop: 4 }}
-              />
             </View>
           </View>
         </GlassCard>
@@ -402,6 +381,20 @@ export default function ExpensesScreen() {
               selectedTab === 'balances' ? "text-white" : isDark ? "text-white" : "text-gray-900"
             )}>
               Balances
+            </Text>
+          </Pressable>
+          <Pressable
+            className={cn(
+              "flex-1 py-2 rounded-lg items-center",
+              selectedTab === 'friends' && "bg-blue-500"
+            )}
+            onPress={() => setSelectedTab('friends')}
+          >
+            <Text className={cn(
+              "font-medium",
+              selectedTab === 'friends' ? "text-white" : isDark ? "text-white" : "text-gray-900"
+            )}>
+              Friends
             </Text>
           </Pressable>
           <Pressable
@@ -644,13 +637,118 @@ export default function ExpensesScreen() {
                     <AnimatedButton
                       title="Split a Bill"
                       size="sm"
-                      onPress={() => navigation.navigate('AddSharedExpense', {})}
+                      onPress={() => navigation.navigate('SplitBill')}
                     />
                   </View>
                 </View>
               </GlassCard>
             )}
           </>
+        ) : selectedTab === 'friends' ? (
+          <View>
+            <Text className={cn(
+              "text-lg font-semibold mb-3",
+              isDark ? "text-white" : "text-gray-900"
+            )}>
+              My Friends
+            </Text>
+            {friends.length > 0 ? (
+              friends.map((friend) => {
+                // Calculate friend balance
+                const friendExpenses = expenses.filter(e => 
+                  !e.groupId && 
+                  e.splitBetween.includes(friend.id) && 
+                  !e.isDraft
+                );
+                
+                let friendBalance = 0;
+                friendExpenses.forEach(expense => {
+                  const splitAmount = expense.amount / expense.splitBetween.length;
+                  if (expense.paidBy === currentUser?.id) {
+                    friendBalance += splitAmount; // Friend owes you
+                  } else if (expense.paidBy === friend.id) {
+                    friendBalance -= splitAmount; // You owe friend
+                  }
+                });
+
+                return (
+                  <GlassCard key={friend.id} className="mb-2">
+                    <Pressable
+                      onPress={() => navigation.navigate('FriendDetail', { friendId: friend.id })}
+                      className="flex-row items-center justify-between"
+                    >
+                      <View className="flex-row items-center flex-1">
+                        <View className={cn(
+                          "w-10 h-10 rounded-lg items-center justify-center mr-3",
+                          isDark ? "bg-purple-600" : "bg-purple-500"
+                        )}>
+                          <Text className="text-white font-bold text-lg">
+                            {friend.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View className="flex-1">
+                          <Text className={cn(
+                            "font-semibold text-base",
+                            isDark ? "text-white" : "text-gray-900"
+                          )}>
+                            {friend.name}
+                          </Text>
+                          <Text className={cn(
+                            "text-xs opacity-70",
+                            isDark ? "text-white" : "text-gray-900"
+                          )}>
+                            You {friendBalance >= 0 ? 'are owed' : 'owe'} ${Math.abs(friendBalance).toFixed(2)}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View className="items-end">
+                        <Text className={cn(
+                          "text-lg font-bold",
+                          friendBalance >= 0 ? "text-green-500" : "text-red-500"
+                        )}>
+                          ${Math.abs(friendBalance).toFixed(2)}
+                        </Text>
+                        <Text className={cn(
+                          "text-xs opacity-60",
+                          isDark ? "text-white" : "text-gray-900"
+                        )}>
+                          {friendBalance >= 0 ? 'Owed' : 'Owes'}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </GlassCard>
+                );
+              })
+            ) : (
+              <GlassCard>
+                <View className="items-center py-8">
+                  <Ionicons 
+                    name="person-add-outline" 
+                    size={48} 
+                    color={isDark ? "#6B7280" : "#9CA3AF"} 
+                  />
+                  <Text className={cn(
+                    "text-lg font-medium mt-4",
+                    isDark ? "text-white" : "text-gray-900"
+                  )}>
+                    No friends yet
+                  </Text>
+                  <Text className={cn(
+                    "text-sm opacity-70 text-center mt-2",
+                    isDark ? "text-white" : "text-gray-900"
+                  )}>
+                    Add friends to split expenses with them
+                  </Text>
+                  <AnimatedButton
+                    title="Add Friend"
+                    className="mt-4"
+                    onPress={() => navigation.navigate('AddFriend')}
+                  />
+                </View>
+              </GlassCard>
+            )}
+          </View>
         ) : (
           <View>
             <Text className={cn(
@@ -686,7 +784,7 @@ export default function ExpensesScreen() {
                   <AnimatedButton
                     title="Create Group"
                     className="mt-4"
-                    onPress={() => {/* TODO: Create group functionality */}}
+                    onPress={() => navigation.navigate('CreateGroup')}
                   />
                 </View>
               </GlassCard>

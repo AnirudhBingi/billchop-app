@@ -7,8 +7,7 @@ import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-naviga
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
-import { PersonalExpense, ExpenseCategory } from '../types';
-import { Picker } from '@react-native-picker/picker';
+import { PersonalExpense, ExpenseCategory, IncomeCategory } from '../types';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -37,14 +36,34 @@ export default function PersonalFinanceModal() {
   const { addPersonalExpense } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
-  const initialType = route.params?.initialType || 'expense';
+  // Defensive param handling
+  const initialType = (route.params?.initialType === 'income' || route.params?.initialType === 'expense') ? route.params.initialType : 'expense';
+  const selectedMode = (route.params?.selectedMode === 'local' || route.params?.selectedMode === 'home') ? route.params.selectedMode : 'local';
+
+  // Debug logging
+  console.log('PersonalFinanceModal - Route params:', route.params);
+  console.log('PersonalFinanceModal - Selected mode:', selectedMode);
+  console.log('PersonalFinanceModal - Initial type:', initialType);
+
+  if (!route.params || !route.params.selectedMode) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' }}>
+        <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 18 }}>Error: Missing navigation parameters. Please return and try again.</Text>
+      </View>
+    );
+  }
   
   const [selectedType, setSelectedType] = useState<'income' | 'expense'>(initialType);
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(selectedType === 'income' ? 'salary' : 'food');
-  const [currency, setCurrency] = useState('USD');
+  
+  // Currency setup based on selected mode
+  const localCurrency = { code: 'USD', symbol: '$' };
+  const homeCurrency = { code: 'INR', symbol: '₹' };
+  const currentCurrency = selectedMode === 'local' ? localCurrency : homeCurrency;
+  const isHomeCountry = selectedMode === 'home';
 
   const handleSave = () => {
     if (!title.trim() || !amount.trim() || parseFloat(amount) <= 0) {
@@ -57,13 +76,13 @@ export default function PersonalFinanceModal() {
       title: title.trim(),
       description: description.trim(),
       amount: parseFloat(amount),
-      currency,
-      category: category as ExpenseCategory,
+      currency: currentCurrency.code,
+      category: category as (ExpenseCategory | IncomeCategory),
       type: selectedType,
       date: new Date(),
       createdAt: new Date(),
       userId: currentUser?.id || '',
-      isHomeCountry: false // TODO: Make this dynamic based on selected mode
+      isHomeCountry
     };
 
     addPersonalExpense(personalExpense);
@@ -115,7 +134,7 @@ export default function PersonalFinanceModal() {
             fontSize: 16, 
             color: isDark ? '#9CA3AF' : '#6B7280'
           }}>
-            Track your personal {selectedType === 'income' ? 'income' : 'expenses'}
+            Track your personal {selectedType === 'income' ? 'income' : 'expenses'} • {currentCurrency.symbol} {currentCurrency.code}
           </Text>
         </Animated.View>
 
@@ -270,7 +289,7 @@ export default function PersonalFinanceModal() {
                 color: selectedType === 'income' ? '#10B981' : '#EF4444',
                 marginRight: 8
               }}>
-                $
+                {currentCurrency.symbol}
               </Text>
               <TextInput
                 value={amount}
@@ -302,40 +321,29 @@ export default function PersonalFinanceModal() {
             }}>
               Category
             </Text>
-            <View style={{
-              backgroundColor: isDark ? '#374151' : '#F9FAFB',
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-              borderRadius: 12,
-              overflow: 'hidden'
-            }}>
-              <Picker
-                selectedValue={category}
-                onValueChange={setCategory}
-                style={{ 
-                  color: isDark ? '#FFFFFF' : '#111827',
-                  backgroundColor: 'transparent'
-                }}
-              >
-                {selectedType === 'income' ? 
-                  INCOME_CATEGORIES.map(cat => (
-                    <Picker.Item 
-                      key={cat} 
-                      label={cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ')} 
-                      value={cat}
-                      color={isDark ? '#FFFFFF' : '#111827'}
-                    />
-                  )) :
-                  EXPENSE_CATEGORIES.map(cat => (
-                    <Picker.Item 
-                      key={cat} 
-                      label={cat.charAt(0).toUpperCase() + cat.slice(1)} 
-                      value={cat}
-                      color={isDark ? '#FFFFFF' : '#111827'}
-                    />
-                  ))
-                }
-              </Picker>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {(selectedType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map(cat => (
+                <Pressable
+                  key={cat}
+                  onPress={() => setCategory(cat)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    backgroundColor: category === cat ? getCategoryColor(cat) : 'transparent',
+                    borderWidth: 1,
+                    borderColor: category === cat ? getCategoryColor(cat) : '#E5E7EB'
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    color: category === cat ? 'white' : isDark ? '#FFFFFF' : '#111827'
+                  }}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ')}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </View>
 
@@ -430,7 +438,7 @@ export default function PersonalFinanceModal() {
                 fontWeight: 'bold',
                 color: selectedType === 'income' ? '#10B981' : '#EF4444'
               }}>
-                {selectedType === 'income' ? '+' : '-'}${parseFloat(amount || '0').toFixed(2)}
+                {selectedType === 'income' ? '+' : '-'}{currentCurrency.symbol}{parseFloat(amount || '0').toFixed(2)}
               </Text>
             </View>
           </Animated.View>

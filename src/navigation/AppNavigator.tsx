@@ -40,10 +40,10 @@ export type RootStackParamList = {
   AddChore: { groupId?: string };
   GroupDetail: { groupId: string };
   Settings: undefined;
-  PersonalFinance: { initialType?: 'income' | 'expense' };
-  BudgetManager: undefined;
-  GoalManager: undefined;
-  CreateRide: undefined;
+  PersonalFinance: { initialType?: 'income' | 'expense'; selectedMode?: 'local' | 'home' };
+  BudgetManager: { selectedMode?: 'local' | 'home' };
+  GoalManager: { selectedMode?: 'local' | 'home' };
+  CreateRide: { selectedPassenger?: string; rideDescription?: string };
   RideLog: undefined;
   AIChat: undefined;
   SettleUp: { groupId?: string; friendId?: string };

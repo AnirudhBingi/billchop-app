@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, Dimensions, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -142,9 +142,22 @@ export default function DashboardScreen() {
       subtitle: 'My Finances',
       icon: 'wallet',
       colors: [THEME_COLORS.success, THEME_COLORS.successLight],
-      onPress: () => navigation.navigate('MainTabs', { screen: 'Personal' })
+      onPress: () => {
+        // Show a message that Personal tab is available
+        Alert.alert('Personal Finance', 'Use the Personal tab at the bottom to manage your personal finances!');
+      }
     }
   ];
+
+  // Personal Finance Summary for Dashboard
+  const personalFinanceSummary = {
+    hasPersonalData: userPersonalExpenses.length > 0,
+    hasBudgets: userBudgets.length > 0,
+    hasGoals: userGoals.length > 0,
+    recentTransactions: userPersonalExpenses
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3)
+  };
 
   return (
     <View 
@@ -187,15 +200,15 @@ export default function DashboardScreen() {
         </Animated.View>
 
         {/* Financial Overview Widget */}
-        <Animated.View entering={FadeInUp.delay(100)} className="px-6 mb-6">
+        <Animated.View entering={FadeInUp.delay(100)} className="px-6 mb-4">
           <Text 
-            className="text-lg font-bold mb-4"
+            className="text-lg font-bold mb-3"
             style={{ color: THEME_COLORS.text }}
           >
             💰 Financial Overview
           </Text>
           <View 
-            className="rounded-2xl p-6"
+            className="rounded-2xl p-4"
             style={{ 
               backgroundColor: THEME_COLORS.card,
               shadowColor: '#000',
@@ -207,54 +220,54 @@ export default function DashboardScreen() {
               borderColor: THEME_COLORS.border
             }}
           >
-            <View className="flex-row justify-between mb-4">
+            <View className="flex-row justify-between">
               <View className="items-center flex-1">
-                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
+                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
                   Net Balance
                 </Text>
                 <Pressable onPress={() => navigation.navigate('Analytics')}>
                   <Text 
-                    className="text-xl font-bold"
+                    className="text-lg font-bold"
                     style={{ color: netBalance >= 0 ? THEME_COLORS.success : THEME_COLORS.error }}
                   >
                     ${Math.abs(netBalance).toFixed(2)}
                   </Text>
                 </Pressable>
-                <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
+                <Text style={{ color: THEME_COLORS.textLight, fontSize: 9 }}>
                   {netBalance >= 0 ? 'Positive' : 'Negative'}
                 </Text>
               </View>
               
               <View className="items-center flex-1">
-                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
+                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
                   You're Owed
                 </Text>
                 <Pressable onPress={() => navigation.navigate('SplitBill')}>
                   <Text 
-                    className="text-xl font-bold"
+                    className="text-lg font-bold"
                     style={{ color: THEME_COLORS.success }}
                   >
                     ${totalOwed.toFixed(2)}
                   </Text>
                 </Pressable>
-                <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
+                <Text style={{ color: THEME_COLORS.textLight, fontSize: 9 }}>
                   From friends
                 </Text>
               </View>
               
               <View className="items-center flex-1">
-                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
+                <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
                   You Owe
                 </Text>
                 <Pressable onPress={() => navigation.navigate('SplitBill')}>
                   <Text 
-                    className="text-xl font-bold"
+                    className="text-lg font-bold"
                     style={{ color: THEME_COLORS.error }}
                   >
                     ${totalOwing.toFixed(2)}
                   </Text>
                 </Pressable>
-                <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
+                <Text style={{ color: THEME_COLORS.textLight, fontSize: 9 }}>
                   To friends
                 </Text>
               </View>
@@ -262,19 +275,19 @@ export default function DashboardScreen() {
             
             {activeGoal && (
               <View 
-                className="mt-4 p-3 rounded-xl"
+                className="mt-3 p-2 rounded-xl"
                 style={{ backgroundColor: THEME_COLORS.secondary + '10' }}
               >
-                <Text className="text-sm font-semibold mb-1" style={{ color: THEME_COLORS.secondary }}>
-                  🎯 Active Goal: {activeGoal.title}
+                <Text className="text-xs font-semibold mb-1" style={{ color: THEME_COLORS.secondary }}>
+                  🎯 {activeGoal.title}
                 </Text>
                 <View className="flex-row justify-between items-center">
                   <View 
-                    className="rounded-full h-2 flex-1 mr-3"
+                    className="rounded-full h-1.5 flex-1 mr-2"
                     style={{ backgroundColor: THEME_COLORS.divider }}
                   >
                     <View 
-                      className="h-2 rounded-full"
+                      className="h-1.5 rounded-full"
                       style={{ 
                         width: `${Math.min((activeGoal.currentAmount / activeGoal.targetAmount) * 100, 100)}%`,
                         backgroundColor: THEME_COLORS.secondary
@@ -407,7 +420,7 @@ export default function DashboardScreen() {
                   }}
                 >
                   <LinearGradient
-                    colors={action.colors}
+                    colors={action.colors as [string, string]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     className="flex-1 p-4 justify-between"

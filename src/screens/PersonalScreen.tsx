@@ -254,7 +254,7 @@ export default function PersonalScreen() {
             </Text>
             <View className="flex-row gap-3">
               <Pressable
-                onPress={() => navigation.navigate('PersonalFinance', { initialType: 'income' })}
+                onPress={() => navigation.navigate('PersonalFinance', { initialType: 'income', selectedMode })}
                 className="flex-1 bg-green-500 p-4 rounded-xl items-center"
               >
                 <Ionicons name="add-circle" size={20} color="white" />
@@ -262,7 +262,7 @@ export default function PersonalScreen() {
               </Pressable>
               
               <Pressable
-                onPress={() => navigation.navigate('PersonalFinance', { initialType: 'expense' })}
+                onPress={() => navigation.navigate('PersonalFinance', { initialType: 'expense', selectedMode })}
                 className="flex-1 bg-red-500 p-4 rounded-xl items-center"
               >
                 <Ionicons name="remove-circle" size={20} color="white" />
@@ -432,7 +432,7 @@ export default function PersonalScreen() {
                     </Text>
                     
                     <Pressable
-                      onPress={() => navigation.navigate('BudgetManager')}
+                      onPress={() => navigation.navigate('BudgetManager', { selectedMode })}
                       className="bg-blue-500 px-6 py-3 rounded-xl self-center"
                     >
                       <Text className="text-white font-semibold">
@@ -504,7 +504,7 @@ export default function PersonalScreen() {
                     </Text>
                     
                     <Pressable
-                      onPress={() => navigation.navigate('GoalManager')}
+                      onPress={() => navigation.navigate('GoalManager', { selectedMode })}
                       className="bg-yellow-500 px-6 py-3 rounded-xl self-center"
                     >
                       <Text className="text-white font-semibold">
