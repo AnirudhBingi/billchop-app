@@ -7,11 +7,15 @@ interface UserState {
   currentUser: User | null;
   friends: User[];
   settings: AppSettings;
+  users: User[];
+  loading: boolean;
   setCurrentUser: (user: User) => void;
   addFriend: (friend: User) => void;
   removeFriend: (friendId: string) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   logout: () => void;
+  fetchUsers: (userIds: string[]) => Promise<void>;
+  fetchFriends: () => Promise<void>;
 }
 
 const defaultSettings: AppSettings = {
@@ -32,6 +36,8 @@ export const useUserStore = create<UserState>()(
       currentUser: null,
       friends: [],
       settings: defaultSettings,
+      users: [],
+      loading: false,
       
       setCurrentUser: (user) => set({ currentUser: user }),
       
@@ -52,6 +58,18 @@ export const useUserStore = create<UserState>()(
         friends: [],
         settings: defaultSettings,
       }),
+      fetchUsers: async (userIds) => {
+        set({ loading: true });
+        // TODO: Implement actual fetch from API
+        const fetchedUsers: User[] = []; // Stub
+        set({ users: fetchedUsers, loading: false });
+      },
+      fetchFriends: async () => {
+        set({ loading: true });
+        // TODO: Implement actual fetch
+        const fetchedFriends: User[] = [];
+        set({ friends: fetchedFriends, loading: false });
+      },
     }),
     {
       name: 'user-storage',

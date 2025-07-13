@@ -12,6 +12,7 @@ interface ExpenseState {
   budgets: Budget[];
   financialGoals: FinancialGoal[];
   spendingInsights: SpendingInsight[];
+  loading: boolean;
   
   // Expense actions
   addExpense: (expense: Expense) => void;
@@ -67,6 +68,7 @@ export const useExpenseStore = create<ExpenseState>()(
       budgets: [],
       financialGoals: [],
       spendingInsights: [],
+      loading: false,
       
       addExpense: (expense) => set((state) => ({
         expenses: [...state.expenses, expense]

@@ -25,6 +25,9 @@ import GoalManagerModal from '../screens/GoalManagerModal';
 import CreateRideScreen from '../screens/CreateRideScreen';
 import RideLogScreen from '../screens/RideLogScreen';
 import AIChatScreen from '../screens/AIChatScreen';
+import SettleUpScreen from '../screens/SettleUpScreen';
+import ExpenseDetailScreen from '../screens/ExpenseDetailScreen';
+import FriendDetailScreen from '../screens/FriendDetailScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -43,6 +46,9 @@ export type RootStackParamList = {
   CreateRide: undefined;
   RideLog: undefined;
   AIChat: undefined;
+  SettleUp: { groupId?: string; friendId?: string };
+  ExpenseDetail: { expenseId: string };
+  FriendDetail: { friendId: string };
 };
 
 export type TabParamList = {
@@ -237,6 +243,21 @@ export default function AppNavigator() {
           title: 'AI Assistant',
           headerShown: false
         }}
+      />
+      <Stack.Screen 
+        name="SettleUp" 
+        component={SettleUpScreen}
+        options={{ title: 'Settle Up' }}
+      />
+      <Stack.Screen 
+        name="ExpenseDetail" 
+        component={ExpenseDetailScreen}
+        options={{ title: 'Expense Details' }}
+      />
+      <Stack.Screen 
+        name="FriendDetail" 
+        component={FriendDetailScreen}
+        options={{ title: 'Friend Details' }}
       />
     </Stack.Navigator>
   );

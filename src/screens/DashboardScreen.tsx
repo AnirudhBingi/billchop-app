@@ -212,12 +212,14 @@ export default function DashboardScreen() {
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
                   Net Balance
                 </Text>
-                <Text 
-                  className="text-xl font-bold"
-                  style={{ color: netBalance >= 0 ? THEME_COLORS.success : THEME_COLORS.error }}
-                >
-                  ${Math.abs(netBalance).toFixed(2)}
-                </Text>
+                <Pressable onPress={() => navigation.navigate('Analytics')}>
+                  <Text 
+                    className="text-xl font-bold"
+                    style={{ color: netBalance >= 0 ? THEME_COLORS.success : THEME_COLORS.error }}
+                  >
+                    ${Math.abs(netBalance).toFixed(2)}
+                  </Text>
+                </Pressable>
                 <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
                   {netBalance >= 0 ? 'Positive' : 'Negative'}
                 </Text>
@@ -227,12 +229,14 @@ export default function DashboardScreen() {
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
                   You're Owed
                 </Text>
-                <Text 
-                  className="text-xl font-bold"
-                  style={{ color: THEME_COLORS.success }}
-                >
-                  ${totalOwed.toFixed(2)}
-                </Text>
+                <Pressable onPress={() => navigation.navigate('SplitBill')}>
+                  <Text 
+                    className="text-xl font-bold"
+                    style={{ color: THEME_COLORS.success }}
+                  >
+                    ${totalOwed.toFixed(2)}
+                  </Text>
+                </Pressable>
                 <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
                   From friends
                 </Text>
@@ -242,12 +246,14 @@ export default function DashboardScreen() {
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
                   You Owe
                 </Text>
-                <Text 
-                  className="text-xl font-bold"
-                  style={{ color: THEME_COLORS.error }}
-                >
-                  ${totalOwing.toFixed(2)}
-                </Text>
+                <Pressable onPress={() => navigation.navigate('SplitBill')}>
+                  <Text 
+                    className="text-xl font-bold"
+                    style={{ color: THEME_COLORS.error }}
+                  >
+                    ${totalOwing.toFixed(2)}
+                  </Text>
+                </Pressable>
                 <Text style={{ color: THEME_COLORS.textLight, fontSize: 10 }}>
                   To friends
                 </Text>
