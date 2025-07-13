@@ -5,6 +5,13 @@ export interface User {
   profilePicture?: string;
   phoneNumber?: string;
   avatar?: string;
+  isActive?: boolean;
+  joinedAt?: Date;
+  preferences?: {
+    currency: string;
+    language: string;
+    notifications: boolean;
+  };
   createdAt: Date;
 }
 
@@ -15,6 +22,14 @@ export interface Group {
   members: string[]; // User IDs
   createdBy: string;
   createdAt: Date;
+  isActive?: boolean;
+  type?: 'apartment' | 'trip' | 'event' | 'other';
+  currency?: string;
+  settings?: {
+    allowMemberExpenses: boolean;
+    requireApproval: boolean;
+    splitMethod: 'equal' | 'percentage' | 'amount';
+  };
 }
 
 export interface Expense {

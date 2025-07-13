@@ -28,6 +28,8 @@ import AIChatScreen from '../screens/AIChatScreen';
 import SettleUpScreen from '../screens/SettleUpScreen';
 import ExpenseDetailScreen from '../screens/ExpenseDetailScreen';
 import FriendDetailScreen from '../screens/FriendDetailScreen';
+import CurrencySelectionScreen from '../screens/CurrencySelectionScreen';
+import ReceiptScanScreen from '../screens/ReceiptScanScreen';
 import { PersonalExpense, Budget, FinancialGoal } from '../types';
 
 export type RootStackParamList = {
@@ -50,6 +52,8 @@ export type RootStackParamList = {
   SettleUp: { groupId?: string; friendId?: string };
   ExpenseDetail: { expenseId: string };
   FriendDetail: { friendId: string };
+  CurrencySelection: undefined;
+  ReceiptScan: undefined;
 };
 
 export type TabParamList = {
@@ -259,6 +263,16 @@ export default function AppNavigator() {
         name="FriendDetail" 
         component={FriendDetailScreen}
         options={{ title: 'Friend Details' }}
+      />
+      <Stack.Screen 
+        name="CurrencySelection" 
+        component={CurrencySelectionScreen}
+        options={{ title: 'Select Currency' }}
+      />
+      <Stack.Screen 
+        name="ReceiptScan" 
+        component={ReceiptScanScreen}
+        options={{ title: 'Scan Receipt' }}
       />
     </Stack.Navigator>
   );
