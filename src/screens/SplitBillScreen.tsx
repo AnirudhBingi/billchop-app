@@ -90,6 +90,12 @@ export default function SplitBillScreen() {
   const [selectedPayer, setSelectedPayer] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   
+  // New state variables for enhanced features
+  const [splitMethod, setSplitMethod] = useState<'equal' | 'percentage' | 'custom'>('equal');
+  const [showPayerDropdown, setShowPayerDropdown] = useState(false);
+  const [showSplitMethodDropdown, setShowSplitMethodDropdown] = useState(false);
+  const [includedMembers, setIncludedMembers] = useState<string[]>([]);
+  
   // Receipt scanning states
   const [receiptMode, setReceiptMode] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -102,17 +108,31 @@ export default function SplitBillScreen() {
     if (currentUser) {
       setSelectedPayer(currentUser.id);
       setSelectedFriends([currentUser.id]);
+      setIncludedMembers([currentUser.id]);
     }
     if (groups.length > 0 && !selectedGroup) {
       setSelectedGroup(groups[0].id);
     }
   }, [currentUser, groups]);
 
+  // Update included members when group changes
+  useEffect(() => {
+    if (selectedGroup && currentUser) {
+      const group = groups.find(g => g.id === selectedGroup);
+      if (group) {
+        setIncludedMembers([currentUser.id, ...group.members.filter(id => id !== currentUser.id)]);
+      }
+    }
+  }, [selectedGroup, groups, currentUser]);
+
   const availableFriends = friends.length > 0 ? friends : [];
   const groupMembers = selectedGroup ? 
     groups.find(g => g.id === selectedGroup)?.members.map(id => 
       friends.find(f => f.id === id) || (currentUser?.id === id ? currentUser : null)
     ).filter(Boolean) || [] : [];
+
+  const allAvailablePayers = [currentUser, ...friends].filter(Boolean);
+  const payerName = allAvailablePayers.find(p => p?.id === selectedPayer)?.name || 'You';
 
   const handleSave = () => {
     // Receipt mode: Create multiple expenses from selected receipt items
@@ -176,7 +196,7 @@ export default function SplitBillScreen() {
     }
 
     const splitters = splitType === 'group' ? 
-      groups.find(g => g.id === selectedGroup)?.members || [] : selectedFriends;
+      includedMembers : selectedFriends;
 
     if (splitters.length === 0) {
       Alert.alert('Error', 'Please select people to split with');
@@ -210,6 +230,23 @@ export default function SplitBillScreen() {
         ? prev.filter(id => id !== friendId)
         : [...prev, friendId]
     );
+  };
+
+  const toggleMemberInclusion = (memberId: string) => {
+    setIncludedMembers(prev => 
+      prev.includes(memberId) 
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
+  const getSplitMethodLabel = (method: string) => {
+    switch (method) {
+      case 'equal': return 'Split Equally';
+      case 'percentage': return 'By Percentage';
+      case 'custom': return 'Custom Amounts';
+      default: return 'Split Equally';
+    }
   };
 
   const handleTitleChange = (text: string) => {
@@ -605,7 +642,291 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
           </View>
         </View>
 
-        {/* Receipt Upload Option */}
+        {/* Friend/Group Selection - Moved here right below split type */}
+        {splitType === 'friends' && (
+          <View style={{ 
+            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 3
+          }}>
+            <Text style={{ 
+              fontSize: 18, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827',
+              marginBottom: 16
+            }}>
+              Select Friends ({selectedFriends.length} selected)
+            </Text>
+            
+            {/* Include current user */}
+            <Pressable
+              onPress={() => toggleFriend(currentUser?.id || '')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 12,
+                borderRadius: 12,
+                marginBottom: 8,
+                borderWidth: 2,
+                borderColor: selectedFriends.includes(currentUser?.id || '') ? '#3B82F6' : '#E5E7EB',
+                backgroundColor: selectedFriends.includes(currentUser?.id || '') ? 
+                  '#EBF5FF' : (isDark ? '#374151' : '#F9FAFB')
+              }}
+            >
+              <View style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: selectedFriends.includes(currentUser?.id || '') ? '#3B82F6' : '#6B7280',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12
+              }}>
+                <Text style={{ color: 'white', fontWeight: '600' }}>
+                  {currentUser?.name.charAt(0) || 'Y'}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: '500',
+                  color: isDark ? '#FFFFFF' : '#111827' 
+                }}>
+                  {currentUser?.name || 'You'}
+                </Text>
+                <Text style={{ 
+                  fontSize: 12, 
+                  color: '#6B7280'
+                }}>
+                  {currentUser?.email || 'you@email.com'}
+                </Text>
+              </View>
+              <Ionicons
+                name={selectedFriends.includes(currentUser?.id || '') ? 
+                  "checkmark-circle" : "ellipse-outline"}
+                size={24}
+                color="#3B82F6"
+              />
+            </Pressable>
+            
+            {availableFriends.length > 0 ? (
+              availableFriends.map(friend => (
+                <Pressable
+                  key={friend.id}
+                  onPress={() => toggleFriend(friend.id)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: 12,
+                    borderRadius: 12,
+                    marginBottom: 8,
+                    borderWidth: 2,
+                    borderColor: selectedFriends.includes(friend.id) ? '#3B82F6' : '#E5E7EB',
+                    backgroundColor: selectedFriends.includes(friend.id) ? 
+                      '#EBF5FF' : (isDark ? '#374151' : '#F9FAFB')
+                  }}
+                >
+                  <View style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: selectedFriends.includes(friend.id) ? '#3B82F6' : '#6B7280',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 12
+                  }}>
+                    <Text style={{ color: 'white', fontWeight: '600' }}>
+                      {friend.name.charAt(0)}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ 
+                      fontSize: 16, 
+                      fontWeight: '500',
+                      color: isDark ? '#FFFFFF' : '#111827' 
+                    }}>
+                      {friend.name}
+                    </Text>
+                    <Text style={{ 
+                      fontSize: 12, 
+                      color: '#6B7280'
+                    }}>
+                      {friend.email}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={selectedFriends.includes(friend.id) ? 
+                      "checkmark-circle" : "ellipse-outline"}
+                    size={24}
+                    color="#3B82F6"
+                  />
+                </Pressable>
+              ))
+            ) : (
+              <View style={{
+                padding: 20,
+                alignItems: 'center',
+                backgroundColor: isDark ? '#374151' : '#F9FAFB',
+                borderRadius: 12,
+                borderWidth: 2,
+                borderColor: '#E5E7EB',
+                borderStyle: 'dashed'
+              }}>
+                <Ionicons name="person-add-outline" size={48} color="#9CA3AF" />
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '500',
+                  color: '#9CA3AF',
+                  marginTop: 8,
+                  textAlign: 'center'
+                }}>
+                  No friends added yet
+                </Text>
+                <Text style={{
+                  fontSize: 14,
+                  color: '#6B7280',
+                  marginTop: 4,
+                  textAlign: 'center'
+                }}>
+                  Add friends in your profile to split expenses with them
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Group Selection with Member Inclusion */}
+        {splitType === 'group' && groups.length > 0 && (
+          <View style={{ 
+            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 3
+          }}>
+            <Text style={{ 
+              fontSize: 18, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827',
+              marginBottom: 16
+            }}>
+              Select Group & Members
+            </Text>
+            
+            <View style={{
+              backgroundColor: isDark ? '#374151' : '#F9FAFB',
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
+              borderRadius: 12,
+              overflow: 'hidden',
+              marginBottom: 16
+            }}>
+              <Picker
+                selectedValue={selectedGroup}
+                onValueChange={setSelectedGroup}
+                style={{ color: isDark ? '#FFFFFF' : '#111827' }}
+              >
+                {groups.map(group => (
+                  <Picker.Item key={group.id} label={group.name} value={group.id} />
+                ))}
+              </Picker>
+            </View>
+            
+            {/* Show group members with inclusion toggle */}
+            {selectedGroup && groupMembers.length > 0 && (
+              <View>
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: '500', 
+                  color: isDark ? '#FFFFFF' : '#111827',
+                  marginBottom: 12
+                }}>
+                  Group Members ({includedMembers.length} included)
+                </Text>
+                {groupMembers.map((member, index) => (
+                  <Pressable
+                    key={member?.id || index}
+                    onPress={() => toggleMemberInclusion(member?.id || '')}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: 12,
+                      borderRadius: 12,
+                      marginBottom: 8,
+                      backgroundColor: includedMembers.includes(member?.id || '') ? 
+                        '#EBF5FF' : (isDark ? '#374151' : '#F9FAFB'),
+                      borderWidth: 2,
+                      borderColor: includedMembers.includes(member?.id || '') ? '#3B82F6' : '#E5E7EB',
+                    }}
+                  >
+                    <View style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: includedMembers.includes(member?.id || '') ? '#3B82F6' : '#6B7280',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 12
+                    }}>
+                      <Text style={{ color: 'white', fontWeight: '600' }}>
+                        {member?.name?.charAt(0) || '?'}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ 
+                        fontSize: 16, 
+                        fontWeight: '500',
+                        color: isDark ? '#FFFFFF' : '#111827' 
+                      }}>
+                        {member?.name || 'Unknown Member'}
+                      </Text>
+                      <Text style={{ 
+                        fontSize: 12, 
+                        color: '#6B7280'
+                      }}>
+                        {member?.email || 'No email'}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={includedMembers.includes(member?.id || '') ? 
+                        "checkmark-circle" : "ellipse-outline"}
+                      size={24}
+                      color="#3B82F6"
+                    />
+                  </Pressable>
+                ))}
+                <View style={{
+                  padding: 12,
+                  backgroundColor: '#F0FDF4',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: '#10B981'
+                }}>
+                  <Text style={{
+                    fontSize: 14,
+                    color: '#059669',
+                    textAlign: 'center',
+                    fontWeight: '500'
+                  }}>
+                    ✓ Bill will be split among {includedMembers.length} selected members
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Paid By and Split Method */}
         <View style={{ 
           backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
           borderRadius: 16,
@@ -621,68 +942,246 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
             fontSize: 18, 
             fontWeight: '600', 
             color: isDark ? '#FFFFFF' : '#111827',
-            marginBottom: 12
-          }}>
-            📸 Smart Receipt Scanning
-          </Text>
-          <Text style={{ 
-            fontSize: 14, 
-            color: isDark ? '#9CA3AF' : '#6B7280',
             marginBottom: 16
           }}>
-            Scan receipt to automatically extract all items for selective splitting
+            Payment & Split Details
           </Text>
           
-          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            {/* Paid By Dropdown */}
+            <View style={{ flex: 1 }}>
+              <Text style={{ 
+                fontSize: 14, 
+                fontWeight: '500', 
+                color: isDark ? '#FFFFFF' : '#111827',
+                marginBottom: 8
+              }}>
+                Paid By
+              </Text>
+              <Pressable
+                onPress={() => setShowPayerDropdown(!showPayerDropdown)}
+                style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  backgroundColor: isDark ? '#374151' : '#F9FAFB',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <Text style={{ 
+                  fontSize: 16, 
+                  color: isDark ? '#FFFFFF' : '#111827' 
+                }}>
+                  {payerName}
+                </Text>
+                <Ionicons 
+                  name={showPayerDropdown ? "chevron-up" : "chevron-down"} 
+                  size={20} 
+                  color={isDark ? '#9CA3AF' : '#6B7280'} 
+                />
+              </Pressable>
+              
+              {showPayerDropdown && (
+                <View style={{
+                  position: 'absolute',
+                  top: 60,
+                  left: 0,
+                  right: 0,
+                  backgroundColor: isDark ? '#374151' : '#FFFFFF',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  zIndex: 1000,
+                  elevation: 5,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                }}>
+                  {allAvailablePayers.map((payer) => (
+                    <Pressable
+                      key={payer?.id}
+                      onPress={() => {
+                        setSelectedPayer(payer?.id || '');
+                        setShowPayerDropdown(false);
+                      }}
+                      style={{
+                        padding: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#E5E7EB',
+                        backgroundColor: selectedPayer === payer?.id ? '#EBF5FF' : 'transparent'
+                      }}
+                    >
+                      <Text style={{ 
+                        fontSize: 16, 
+                        color: isDark ? '#FFFFFF' : '#111827',
+                        fontWeight: selectedPayer === payer?.id ? '600' : '400'
+                      }}>
+                        {payer?.name || 'Unknown'}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Split Method Dropdown */}
+            <View style={{ flex: 1 }}>
+              <Text style={{ 
+                fontSize: 14, 
+                fontWeight: '500', 
+                color: isDark ? '#FFFFFF' : '#111827',
+                marginBottom: 8
+              }}>
+                Split Method
+              </Text>
+              <Pressable
+                onPress={() => setShowSplitMethodDropdown(!showSplitMethodDropdown)}
+                style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  backgroundColor: isDark ? '#374151' : '#F9FAFB',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <Text style={{ 
+                  fontSize: 16, 
+                  color: isDark ? '#FFFFFF' : '#111827' 
+                }}>
+                  {getSplitMethodLabel(splitMethod)}
+                </Text>
+                <Ionicons 
+                  name={showSplitMethodDropdown ? "chevron-up" : "chevron-down"} 
+                  size={20} 
+                  color={isDark ? '#9CA3AF' : '#6B7280'} 
+                />
+              </Pressable>
+              
+              {showSplitMethodDropdown && (
+                <View style={{
+                  position: 'absolute',
+                  top: 60,
+                  left: 0,
+                  right: 0,
+                  backgroundColor: isDark ? '#374151' : '#FFFFFF',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  zIndex: 1000,
+                  elevation: 5,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                }}>
+                  {['equal', 'percentage', 'custom'].map((method) => (
+                    <Pressable
+                      key={method}
+                      onPress={() => {
+                        setSplitMethod(method as any);
+                        setShowSplitMethodDropdown(false);
+                      }}
+                      style={{
+                        padding: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#E5E7EB',
+                        backgroundColor: splitMethod === method ? '#EBF5FF' : 'transparent'
+                      }}
+                    >
+                      <Text style={{ 
+                        fontSize: 16, 
+                        color: isDark ? '#FFFFFF' : '#111827',
+                        fontWeight: splitMethod === method ? '600' : '400'
+                      }}>
+                        {getSplitMethodLabel(method)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Compact Receipt Upload Option */}
+        <View style={{ 
+          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 3
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <Ionicons name="receipt-outline" size={20} color="#3B82F6" style={{ marginRight: 8 }} />
+            <Text style={{ 
+              fontSize: 16, 
+              fontWeight: '600', 
+              color: isDark ? '#FFFFFF' : '#111827'
+            }}>
+              📸 Smart Receipt Scanning
+            </Text>
+          </View>
+          
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             <Pressable
               onPress={takePhoto}
               style={{
                 flex: 1,
-                padding: 16,
-                borderRadius: 12,
+                padding: 10,
+                borderRadius: 8,
                 backgroundColor: '#3B82F6',
                 alignItems: 'center',
                 flexDirection: 'row',
                 justifyContent: 'center'
               }}
             >
-              <Ionicons name="camera" size={20} color="white" style={{ marginRight: 8 }} />
-              <Text style={{ color: 'white', fontWeight: '600' }}>Take Photo</Text>
+              <Ionicons name="camera" size={16} color="white" style={{ marginRight: 6 }} />
+              <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>Photo</Text>
             </Pressable>
             
             <Pressable
               onPress={pickImage}
               style={{
                 flex: 1,
-                padding: 16,
-                borderRadius: 12,
+                padding: 10,
+                borderRadius: 8,
                 backgroundColor: '#10B981',
                 alignItems: 'center',
                 flexDirection: 'row',
                 justifyContent: 'center'
               }}
             >
-              <Ionicons name="images" size={20} color="white" style={{ marginRight: 8 }} />
-              <Text style={{ color: 'white', fontWeight: '600' }}>Gallery</Text>
+              <Ionicons name="images" size={16} color="white" style={{ marginRight: 6 }} />
+              <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>Gallery</Text>
+            </Pressable>
+            
+            <Pressable
+              onPress={useMockReceiptData}
+              style={{
+                flex: 1,
+                padding: 10,
+                borderRadius: 8,
+                backgroundColor: '#F59E0B',
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center'
+              }}
+            >
+              <Ionicons name="play" size={16} color="white" style={{ marginRight: 6 }} />
+              <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>Demo</Text>
             </Pressable>
           </View>
-          
-          <Pressable
-            onPress={useMockReceiptData}
-            style={{
-              padding: 12,
-              borderRadius: 12,
-              backgroundColor: '#F59E0B',
-              alignItems: 'center',
-              borderWidth: 2,
-              borderColor: '#FBBF24',
-              borderStyle: 'dashed'
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>
-              🎯 Try with Sample Walmart Receipt
-            </Text>
-          </Pressable>
         </View>
 
         {/* Receipt Preview */}
@@ -998,7 +1497,7 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
           
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
             <Text style={{ 
-              fontSize: 16, 
+              fontSize: 14, 
               fontWeight: '500', 
               color: isDark ? '#FFFFFF' : '#111827',
               marginRight: 8
@@ -1008,11 +1507,11 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
             {title.length >= 3 && (
               <View style={{
                 backgroundColor: '#10B981',
-                paddingHorizontal: 8,
+                paddingHorizontal: 6,
                 paddingVertical: 2,
-                borderRadius: 8
+                borderRadius: 6
               }}>
-                <Text style={{ color: 'white', fontSize: 12, fontWeight: '500' }}>
+                <Text style={{ color: 'white', fontSize: 10, fontWeight: '500' }}>
                   Auto-detected
                 </Text>
               </View>
@@ -1022,9 +1521,9 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
             backgroundColor: isDark ? '#374151' : '#F9FAFB',
             borderWidth: 1,
             borderColor: '#E5E7EB',
-            borderRadius: 12,
+            borderRadius: 8,
             overflow: 'hidden',
-            minHeight: 50,
+            minHeight: 40,
             justifyContent: 'center'
           }}>
             <Picker
@@ -1032,7 +1531,8 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
               onValueChange={setCategory}
               style={{ 
                 color: isDark ? '#FFFFFF' : '#111827',
-                backgroundColor: 'transparent'
+                backgroundColor: 'transparent',
+                fontSize: 14
               }}
               itemStyle={{
                 color: isDark ? '#FFFFFF' : '#111827',
@@ -1053,286 +1553,7 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
         )}
         {/* End Manual Entry Section */}
 
-        {/* Group Selection (if group type selected) */}
-        {splitType === 'group' && groups.length > 0 && (
-          <View style={{ 
-            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 20,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 3
-          }}>
-            <Text style={{ 
-              fontSize: 18, 
-              fontWeight: '600', 
-              color: isDark ? '#FFFFFF' : '#111827',
-              marginBottom: 16
-            }}>
-              Select Group
-            </Text>
-            
-            <View style={{
-              backgroundColor: isDark ? '#374151' : '#F9FAFB',
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-              borderRadius: 12,
-              overflow: 'hidden',
-              marginBottom: 16
-            }}>
-              <Picker
-                selectedValue={selectedGroup}
-                onValueChange={setSelectedGroup}
-                style={{ color: isDark ? '#FFFFFF' : '#111827' }}
-              >
-                {groups.map(group => (
-                  <Picker.Item key={group.id} label={group.name} value={group.id} />
-                ))}
-              </Picker>
-            </View>
-            
-            {/* Show group members */}
-            {selectedGroup && groupMembers.length > 0 && (
-              <View>
-                <Text style={{ 
-                  fontSize: 16, 
-                  fontWeight: '500', 
-                  color: isDark ? '#FFFFFF' : '#111827',
-                  marginBottom: 12
-                }}>
-                  Group Members ({groupMembers.length})
-                </Text>
-                {groupMembers.map((member, index) => (
-                  <View
-                    key={member?.id || index}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      padding: 12,
-                      borderRadius: 12,
-                      marginBottom: 8,
-                      backgroundColor: '#EBF5FF',
-                      borderWidth: 2,
-                      borderColor: '#3B82F6',
-                    }}
-                  >
-                    <View style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: '#3B82F6',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 12
-                    }}>
-                      <Text style={{ color: 'white', fontWeight: '600' }}>
-                        {member?.name?.charAt(0) || '?'}
-                      </Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ 
-                        fontSize: 16, 
-                        fontWeight: '500',
-                        color: isDark ? '#FFFFFF' : '#111827' 
-                      }}>
-                        {member?.name || 'Unknown Member'}
-                      </Text>
-                      <Text style={{ 
-                        fontSize: 12, 
-                        color: '#6B7280'
-                      }}>
-                        {member?.email || 'No email'}
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={24}
-                      color="#3B82F6"
-                    />
-                  </View>
-                ))}
-                <View style={{
-                  padding: 12,
-                  backgroundColor: '#F0FDF4',
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: '#10B981'
-                }}>
-                  <Text style={{
-                    fontSize: 14,
-                    color: '#059669',
-                    textAlign: 'center',
-                    fontWeight: '500'
-                  }}>
-                    ✓ Bill will be split equally among all {groupMembers.length} members
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
-        )}
 
-        {/* Friend Selection (if friends type selected) */}
-        {splitType === 'friends' && (
-          <View style={{ 
-            backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 20,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 3
-          }}>
-            <Text style={{ 
-              fontSize: 18, 
-              fontWeight: '600', 
-              color: isDark ? '#FFFFFF' : '#111827',
-              marginBottom: 16
-            }}>
-              Select Friends ({selectedFriends.length} selected)
-            </Text>
-            
-            {/* Include current user */}
-            <Pressable
-              onPress={() => toggleFriend(currentUser?.id || '')}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                padding: 12,
-                borderRadius: 12,
-                marginBottom: 8,
-                borderWidth: 2,
-                borderColor: selectedFriends.includes(currentUser?.id || '') ? '#3B82F6' : '#E5E7EB',
-                backgroundColor: selectedFriends.includes(currentUser?.id || '') ? 
-                  '#EBF5FF' : (isDark ? '#374151' : '#F9FAFB')
-              }}
-            >
-              <View style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: selectedFriends.includes(currentUser?.id || '') ? '#3B82F6' : '#6B7280',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}>
-                <Text style={{ color: 'white', fontWeight: '600' }}>
-                  {currentUser?.name.charAt(0) || 'Y'}
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ 
-                  fontSize: 16, 
-                  fontWeight: '500',
-                  color: isDark ? '#FFFFFF' : '#111827' 
-                }}>
-                  {currentUser?.name || 'You'}
-                </Text>
-                <Text style={{ 
-                  fontSize: 12, 
-                  color: '#6B7280'
-                }}>
-                  {currentUser?.email || 'you@email.com'}
-                </Text>
-              </View>
-              <Ionicons
-                name={selectedFriends.includes(currentUser?.id || '') ? 
-                  "checkmark-circle" : "ellipse-outline"}
-                size={24}
-                color="#3B82F6"
-              />
-            </Pressable>
-            
-            {availableFriends.length > 0 ? (
-              availableFriends.map(friend => (
-                <Pressable
-                  key={friend.id}
-                  onPress={() => toggleFriend(friend.id)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: 12,
-                    borderRadius: 12,
-                    marginBottom: 8,
-                    borderWidth: 2,
-                    borderColor: selectedFriends.includes(friend.id) ? '#3B82F6' : '#E5E7EB',
-                    backgroundColor: selectedFriends.includes(friend.id) ? 
-                      '#EBF5FF' : (isDark ? '#374151' : '#F9FAFB')
-                  }}
-                >
-                  <View style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: selectedFriends.includes(friend.id) ? '#3B82F6' : '#6B7280',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12
-                  }}>
-                    <Text style={{ color: 'white', fontWeight: '600' }}>
-                      {friend.name.charAt(0)}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ 
-                      fontSize: 16, 
-                      fontWeight: '500',
-                      color: isDark ? '#FFFFFF' : '#111827' 
-                    }}>
-                      {friend.name}
-                    </Text>
-                    <Text style={{ 
-                      fontSize: 12, 
-                      color: '#6B7280'
-                    }}>
-                      {friend.email}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name={selectedFriends.includes(friend.id) ? 
-                      "checkmark-circle" : "ellipse-outline"}
-                    size={24}
-                    color="#3B82F6"
-                  />
-                </Pressable>
-              ))
-            ) : (
-              <View style={{
-                padding: 20,
-                alignItems: 'center',
-                backgroundColor: isDark ? '#374151' : '#F9FAFB',
-                borderRadius: 12,
-                borderWidth: 2,
-                borderColor: '#E5E7EB',
-                borderStyle: 'dashed'
-              }}>
-                <Ionicons name="person-add-outline" size={48} color="#9CA3AF" />
-                <Text style={{
-                  fontSize: 16,
-                  fontWeight: '500',
-                  color: '#9CA3AF',
-                  marginTop: 8,
-                  textAlign: 'center'
-                }}>
-                  No friends added yet
-                </Text>
-                <Text style={{
-                  fontSize: 14,
-                  color: '#6B7280',
-                  marginTop: 4,
-                  textAlign: 'center'
-                }}>
-                  Add friends in your profile to split expenses with them
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
 
         {/* Bottom spacing */}
         <View style={{ height: 100 }} />
