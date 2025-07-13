@@ -999,11 +999,11 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
                   borderRadius: 12,
                   borderWidth: 1,
                   borderColor: '#E5E7EB',
-                  zIndex: 1000,
-                  elevation: 5,
+                  zIndex: 9999,
+                  elevation: 10,
                   shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
                   shadowRadius: 8,
                 }}>
                   {allAvailablePayers.map((payer) => (
@@ -1079,11 +1079,11 @@ INCLUDE ALL ITEMS - be comprehensive, not conservative.`
                   borderRadius: 12,
                   borderWidth: 1,
                   borderColor: '#E5E7EB',
-                  zIndex: 1000,
-                  elevation: 5,
+                  zIndex: 9999,
+                  elevation: 10,
                   shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
                   shadowRadius: 8,
                 }}>
                   {['equal', 'percentage', 'custom'].map((method) => (

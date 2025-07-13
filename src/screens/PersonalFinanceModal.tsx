@@ -151,7 +151,7 @@ export default function PersonalFinanceModal() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#F3F4F6', paddingTop: insets.top }}>
+    <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
         
         {/* Header */}
@@ -534,7 +534,6 @@ export default function PersonalFinanceModal() {
           </Pressable>
         </View>
       </View>
-        </ScrollView>
-      </View>
+    </View>
   );
 }

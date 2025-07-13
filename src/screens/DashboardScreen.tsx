@@ -668,16 +668,17 @@ export default function DashboardScreen() {
           className="rounded-full p-4 overflow-hidden"
           style={{ 
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 12,
-            elevation: 8,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.25,
+            shadowRadius: 16,
+            elevation: 12,
             borderWidth: 1,
-            borderColor: THEME_COLORS.border
+            borderColor: 'rgba(255,255,255,0.2)',
+            backgroundColor: 'rgba(59, 130, 246, 0.9)', // Blue glassmorphic background
           }}
         >
           <LinearGradient
-            colors={[THEME_COLORS.primary, THEME_COLORS.secondary, THEME_COLORS.accent]}
+            colors={['rgba(59, 130, 246, 0.95)', 'rgba(37, 99, 235, 0.95)', 'rgba(29, 78, 216, 0.95)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="absolute inset-0 rounded-full"
@@ -686,15 +687,15 @@ export default function DashboardScreen() {
             <View className="flex-row items-center flex-1">
               <View
                 className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                style={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
               >
                 <Ionicons name="sparkles" size={20} color="white" />
               </View>
               <View className="flex-1">
-                <Text className="font-semibold text-white">
+                <Text className="font-semibold text-white text-base">
                   AI Assistant
                 </Text>
-                <Text className="text-xs text-white opacity-90">
+                <Text className="text-xs text-white opacity-95">
                   Ask me anything about expenses, budgets, or splitting bills
                 </Text>
               </View>
