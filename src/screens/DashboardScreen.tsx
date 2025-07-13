@@ -77,14 +77,18 @@ export default function DashboardScreen() {
   // Initialize mock data for demo
   useEffect(() => {
     if (!currentUser) {
+      console.log('Setting up mock data...');
       useUserStore.getState().setCurrentUser(mockUsers[0]);
       mockUsers.slice(1).forEach(user => {
+        console.log('Adding friend:', user.name);
         useUserStore.getState().addFriend(user);
       });
       mockGroups.forEach(group => {
+        console.log('Adding group:', group.name);
         useExpenseStore.getState().addGroup(group);
       });
       mockExpenses.forEach(expense => {
+        console.log('Adding expense:', expense.title, 'paid by:', expense.paidBy, 'split between:', expense.splitBetween);
         useExpenseStore.getState().addExpense(expense);
       });
       mockChores.forEach(chore => {
@@ -95,6 +99,21 @@ export default function DashboardScreen() {
       });
     }
   }, [currentUser]);
+
+  // Debug balance calculations
+  useEffect(() => {
+    if (currentUser) {
+      console.log('Current user:', currentUser.name, 'ID:', currentUser.id);
+      console.log('Total expenses:', expenses.length);
+      console.log('Total owed calculation:', getTotalOwed(userId));
+      console.log('Total owing calculation:', getTotalOwing(userId));
+      
+      // Log some expense details
+      expenses.forEach(exp => {
+        console.log(`Expense: ${exp.title}, Paid by: ${exp.paidBy}, Split between: ${exp.splitBetween.join(',')}`);
+      });
+    }
+  }, [currentUser, expenses, userId]);
 
   // Calculate financial data with combined currency conversion
   const [combinedBalance, setCombinedBalance] = useState<{

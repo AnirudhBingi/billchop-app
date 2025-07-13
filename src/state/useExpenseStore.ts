@@ -279,17 +279,18 @@ export const useExpenseStore = create<ExpenseState>()(
       },
       
       getTotalOwed: (userId) => {
-        // Calculate from actual expenses instead of relying on balances array
+        // Calculate from actual expenses where user paid but others owe them
         const userExpenses = get().expenses.filter(e => 
           e.paidBy === userId && 
-          e.splitBetween.includes(userId) === false // User paid but didn't split with themselves
+          e.splitBetween.includes(userId) // User is in the split
         );
         
         let totalOwed = 0;
         userExpenses.forEach(expense => {
-          // Calculate how much others owe the user
+          // Calculate how much others owe the user (excluding user's own share)
           const splitAmount = expense.amount / expense.splitBetween.length;
-          const othersOwe = splitAmount * expense.splitBetween.length;
+          const othersInSplit = expense.splitBetween.filter(id => id !== userId);
+          const othersOwe = splitAmount * othersInSplit.length;
           totalOwed += othersOwe;
         });
         
