@@ -23,7 +23,7 @@ export default function BudgetManagerModal() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { currentUser, settings } = useUserStore();
-  const { addBudget } = useExpenseStore();
+  const { addBudget, updateBudget } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
   const userId = currentUser?.id || '';
@@ -42,10 +42,13 @@ export default function BudgetManagerModal() {
     );
   }
   
-  const [category, setCategory] = useState<ExpenseCategory>('food');
-  const [limit, setLimit] = useState('');
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
-  const [alertThreshold, setAlertThreshold] = useState('80');
+  const isEditing = !!route.params?.budgetId && !!route.params?.prefill;
+  const prefill = route.params?.prefill;
+
+  const [category, setCategory] = useState<ExpenseCategory>(prefill ? prefill.category as ExpenseCategory : 'food');
+  const [limit, setLimit] = useState(prefill ? prefill.limit.toString() : '');
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>(prefill ? prefill.period : 'monthly');
+  const [alertThreshold, setAlertThreshold] = useState(prefill ? prefill.alertThreshold.toString() : '80');
 
   // Currency setup based on selected mode
   const localCurrency = { code: 'USD', symbol: '$' };
@@ -56,6 +59,23 @@ export default function BudgetManagerModal() {
   const handleSave = () => {
     if (!limit.trim() || parseFloat(limit) <= 0) {
       Alert.alert('Error', 'Please enter a valid budget limit');
+      return;
+    }
+
+    if (isEditing && prefill) {
+      updateBudget(prefill.id, {
+        category,
+        limit: parseFloat(limit),
+        period,
+        alertThreshold: parseFloat(alertThreshold),
+        currency: currentCurrency.code,
+        isHomeCountry
+      });
+      Alert.alert(
+        'Success!',
+        'Budget updated successfully!',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
       return;
     }
 

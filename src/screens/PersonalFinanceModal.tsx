@@ -9,6 +9,7 @@ import { useUserStore } from '../state/useUserStore';
 import { useExpenseStore } from '../state/useExpenseStore';
 import { PersonalExpense, ExpenseCategory, IncomeCategory } from '../types';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import CurrencyService from '../services/CurrencyService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProp = NativeStackScreenProps<RootStackParamList, 'PersonalFinance'>['route'];
@@ -33,12 +34,15 @@ export default function PersonalFinanceModal() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { currentUser, settings } = useUserStore();
-  const { addPersonalExpense } = useExpenseStore();
+  const { addPersonalExpense, updatePersonalExpense } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
   // Defensive param handling
   const initialType = (route.params?.initialType === 'income' || route.params?.initialType === 'expense') ? route.params.initialType : 'expense';
   const selectedMode = (route.params?.selectedMode === 'local' || route.params?.selectedMode === 'home') ? route.params.selectedMode : 'local';
+
+  const isEditing = !!route.params?.expenseId && !!route.params?.prefill;
+  const prefill = route.params?.prefill;
 
   // Debug logging
   console.log('PersonalFinanceModal - Route params:', route.params);
@@ -53,11 +57,11 @@ export default function PersonalFinanceModal() {
     );
   }
   
-  const [selectedType, setSelectedType] = useState<'income' | 'expense'>(initialType);
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<string>(selectedType === 'income' ? 'salary' : 'food');
+  const [selectedType, setSelectedType] = useState<'income' | 'expense'>(prefill ? prefill.type : initialType);
+  const [title, setTitle] = useState(prefill ? prefill.title : '');
+  const [amount, setAmount] = useState(prefill ? prefill.amount.toString() : '');
+  const [description, setDescription] = useState(prefill ? prefill.description || '' : '');
+  const [category, setCategory] = useState<string>(prefill ? prefill.category : (selectedType === 'income' ? 'salary' : 'food'));
   
   // Currency setup based on selected mode
   const localCurrency = { code: 'USD', symbol: '$' };
@@ -65,9 +69,38 @@ export default function PersonalFinanceModal() {
   const currentCurrency = selectedMode === 'local' ? localCurrency : homeCurrency;
   const isHomeCountry = selectedMode === 'home';
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim() || !amount.trim() || parseFloat(amount) <= 0) {
       Alert.alert('Error', 'Please fill in title and amount');
+      return;
+    }
+
+    let lockedExchangeRate: number | undefined = prefill?.lockedExchangeRate;
+    if (currentCurrency.code !== 'USD' && !lockedExchangeRate) {
+      try {
+        const currencyService = CurrencyService.getInstance();
+        lockedExchangeRate = await currencyService.getExchangeRate(currentCurrency.code, 'USD');
+      } catch (error) {
+        console.warn('Could not fetch exchange rate, will fallback to current rate on calculation.');
+      }
+    }
+
+    if (isEditing && prefill) {
+      updatePersonalExpense(prefill.id, {
+        title: title.trim(),
+        description: description.trim(),
+        amount: parseFloat(amount),
+        currency: currentCurrency.code,
+        category: category as (ExpenseCategory | IncomeCategory),
+        type: selectedType,
+        isHomeCountry,
+        lockedExchangeRate
+      });
+      Alert.alert(
+        'Success!',
+        'Transaction updated successfully!',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
       return;
     }
 
@@ -82,7 +115,8 @@ export default function PersonalFinanceModal() {
       date: new Date(),
       createdAt: new Date(),
       userId: currentUser?.id || '',
-      isHomeCountry
+      isHomeCountry,
+      lockedExchangeRate
     };
 
     addPersonalExpense(personalExpense);

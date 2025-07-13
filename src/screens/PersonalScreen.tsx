@@ -12,6 +12,7 @@ import { PersonalExpense, Budget, FinancialGoal, SpendingInsight } from '../type
 import { format, startOfMonth, endOfMonth, isAfter } from 'date-fns';
 import { cn } from '../utils/cn';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import CurrencyService from '../services/CurrencyService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -28,7 +29,11 @@ export default function PersonalScreen() {
     addGoal,
     updateBudget,
     generateInsights,
-    markInsightAsRead
+    markInsightAsRead,
+    updatePersonalExpense,
+    deletePersonalExpense,
+    deleteBudget,
+    deleteGoal
   } = useExpenseStore();
   
   const [selectedMode, setSelectedMode] = useState<'selection' | 'local' | 'home'>('selection');
@@ -55,12 +60,77 @@ export default function PersonalScreen() {
   );
   const userInsights = spendingInsights.filter(i => !i.isRead);
 
-  // Calculate financial metrics
+  // Calculate financial metrics for current mode
   const expenses = userExpenses.filter(e => e.type === 'expense');
   const income = userExpenses.filter(e => e.type === 'income');
   const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
   const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
   const netBalance = totalIncome - totalExpenses;
+
+  // Calculate combined balance across both local and home currencies
+  const [combinedBalance, setCombinedBalance] = useState<{
+    totalIncome: number;
+    totalExpenses: number;
+    netBalance: number;
+    currency: string;
+  }>({ totalIncome: 0, totalExpenses: 0, netBalance: 0, currency: 'USD' });
+
+  // Calculate combined balance with currency conversion
+  useEffect(() => {
+    const calculateCombinedBalance = async () => {
+      try {
+        const currencyService = CurrencyService.getInstance();
+        
+        // Get all personal expenses for the user
+        const allUserExpenses = personalExpenses.filter(e => e.userId === userId);
+        const localExpenses = allUserExpenses.filter(e => !e.isHomeCountry);
+        const homeExpenses = allUserExpenses.filter(e => e.isHomeCountry);
+
+        // Calculate local totals
+        const localIncome = localExpenses.filter(e => e.type === 'income');
+        const localExpenseItems = localExpenses.filter(e => e.type === 'expense');
+        const localTotalIncome = localIncome.reduce((sum, item) => sum + item.amount, 0);
+        const localTotalExpenses = localExpenseItems.reduce((sum, item) => sum + item.amount, 0);
+
+        // Calculate home totals (convert each using locked rate if present)
+        let homeIncomeInUSD = 0;
+        let homeExpensesInUSD = 0;
+        for (const entry of homeExpenses) {
+          const rate = entry.lockedExchangeRate || await currencyService.getExchangeRate(entry.currency, 'USD');
+          if (entry.type === 'income') {
+            homeIncomeInUSD += entry.amount * rate;
+          } else if (entry.type === 'expense') {
+            homeExpensesInUSD += entry.amount * rate;
+          }
+        }
+
+        // Calculate combined totals in USD
+        const combinedTotalIncome = localTotalIncome + homeIncomeInUSD;
+        const combinedTotalExpenses = localTotalExpenses + homeExpensesInUSD;
+        const combinedNetBalance = combinedTotalIncome - combinedTotalExpenses;
+
+        setCombinedBalance({
+          totalIncome: combinedTotalIncome,
+          totalExpenses: combinedTotalExpenses,
+          netBalance: combinedNetBalance,
+          currency: 'USD'
+        });
+      } catch (error) {
+        console.error('Error calculating combined balance:', error);
+        // Fallback to current mode calculation
+        setCombinedBalance({
+          totalIncome,
+          totalExpenses,
+          netBalance,
+          currency: currentCurrency.code
+        });
+      }
+    };
+
+    if (userId) {
+      calculateCombinedBalance();
+    }
+  }, [personalExpenses, userId, currentCurrency.code]);
 
   // Update budget spent amounts and generate insights only when needed
   useEffect(() => {
@@ -128,6 +198,64 @@ export default function PersonalScreen() {
       priority: 'medium'
     };
     addGoal(goal);
+  };
+
+  const handleEditTransaction = (expense: PersonalExpense) => {
+    navigation.navigate('PersonalFinance', {
+      initialType: expense.type,
+      selectedMode: expense.isHomeCountry ? 'home' : 'local',
+      expenseId: expense.id,
+      prefill: expense
+    });
+  };
+
+  const handleDeleteTransaction = (expense: PersonalExpense) => {
+    Alert.alert(
+      'Delete Transaction',
+      'Are you sure you want to delete this transaction?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deletePersonalExpense(expense.id) }
+      ]
+    );
+  };
+
+  const handleEditBudget = (budget: Budget) => {
+    navigation.navigate('BudgetManager', { 
+      selectedMode: budget.isHomeCountry ? 'home' : 'local',
+      budgetId: budget.id,
+      prefill: budget
+    });
+  };
+
+  const handleDeleteBudget = (budget: Budget) => {
+    Alert.alert(
+      'Delete Budget',
+      `Are you sure you want to delete the ${budget.category} budget?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteBudget(budget.id) }
+      ]
+    );
+  };
+
+  const handleEditGoal = (goal: FinancialGoal) => {
+    navigation.navigate('GoalManager', { 
+      selectedMode: goal.isHomeCountry ? 'home' : 'local',
+      goalId: goal.id,
+      prefill: goal
+    });
+  };
+
+  const handleDeleteGoal = (goal: FinancialGoal) => {
+    Alert.alert(
+      'Delete Goal',
+      `Are you sure you want to delete the "${goal.title}" goal?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteGoal(goal.id) }
+      ]
+    );
   };
 
   // Currency Selection Screen
@@ -355,6 +483,22 @@ export default function PersonalScreen() {
                           )}>
                             {item.type === 'income' ? '+' : '-'}{currentCurrency.symbol}{item.amount.toFixed(2)}
                           </Text>
+                          <View className="flex-row ml-2">
+                            <Pressable
+                              onPress={() => handleEditTransaction(item)}
+                              accessibilityLabel="Edit transaction"
+                              className="p-2 mr-1 rounded-full bg-blue-500/10"
+                            >
+                              <Ionicons name="create-outline" size={18} color="#3B82F6" />
+                            </Pressable>
+                            <Pressable
+                              onPress={() => handleDeleteTransaction(item)}
+                              accessibilityLabel="Delete transaction"
+                              className="p-2 rounded-full bg-red-500/10"
+                            >
+                              <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                            </Pressable>
+                          </View>
                         </View>
                       </GlassCard>
                     )}
@@ -395,12 +539,30 @@ export default function PersonalScreen() {
                           <Text className={cn("font-semibold capitalize", isDark ? "text-white" : "text-gray-900")}>
                             {budget.category}
                           </Text>
-                          <Text className={cn(
-                            "font-bold",
-                            isOverBudget ? "text-red-500" : percentage > 80 ? "text-yellow-500" : "text-green-500"
-                          )}>
-                            {currentCurrency.symbol}{budget.spent.toFixed(2)} / {currentCurrency.symbol}{budget.limit.toFixed(2)}
-                          </Text>
+                          <View className="flex-row items-center">
+                            <Text className={cn(
+                              "font-bold mr-2",
+                              isOverBudget ? "text-red-500" : percentage > 80 ? "text-yellow-500" : "text-green-500"
+                            )}>
+                              {currentCurrency.symbol}{budget.spent.toFixed(2)} / {currentCurrency.symbol}{budget.limit.toFixed(2)}
+                            </Text>
+                            <View className="flex-row">
+                              <Pressable
+                                onPress={() => handleEditBudget(budget)}
+                                accessibilityLabel="Edit budget"
+                                className="p-2 mr-1 rounded-full bg-blue-500/10"
+                              >
+                                <Ionicons name="create-outline" size={16} color="#3B82F6" />
+                              </Pressable>
+                              <Pressable
+                                onPress={() => handleDeleteBudget(budget)}
+                                accessibilityLabel="Delete budget"
+                                className="p-2 rounded-full bg-red-500/10"
+                              >
+                                <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                              </Pressable>
+                            </View>
+                          </View>
                         </View>
                         
                         <View className="bg-gray-200 rounded-full h-3 mb-2">
@@ -462,12 +624,30 @@ export default function PersonalScreen() {
                           <Text className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
                             {goal.title}
                           </Text>
-                          <Text className={cn(
-                            "font-bold",
-                            goal.isCompleted ? "text-green-500" : "text-blue-500"
-                          )}>
-                            {currentCurrency.symbol}{goal.currentAmount.toFixed(2)} / {currentCurrency.symbol}{goal.targetAmount.toFixed(2)}
-                          </Text>
+                          <View className="flex-row items-center">
+                            <Text className={cn(
+                              "font-bold mr-2",
+                              goal.isCompleted ? "text-green-500" : "text-blue-500"
+                            )}>
+                              {currentCurrency.symbol}{goal.currentAmount.toFixed(2)} / {currentCurrency.symbol}{goal.targetAmount.toFixed(2)}
+                            </Text>
+                            <View className="flex-row">
+                              <Pressable
+                                onPress={() => handleEditGoal(goal)}
+                                accessibilityLabel="Edit goal"
+                                className="p-2 mr-1 rounded-full bg-blue-500/10"
+                              >
+                                <Ionicons name="create-outline" size={16} color="#3B82F6" />
+                              </Pressable>
+                              <Pressable
+                                onPress={() => handleDeleteGoal(goal)}
+                                accessibilityLabel="Delete goal"
+                                className="p-2 rounded-full bg-red-500/10"
+                              >
+                                <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                              </Pressable>
+                            </View>
+                          </View>
                         </View>
                         
                         <View className="bg-gray-200 rounded-full h-3 mb-2">

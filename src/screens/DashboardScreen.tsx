@@ -12,6 +12,7 @@ import { mockUsers, mockGroups, mockExpenses, mockChores, mockPersonalExpenses }
 import { cn } from '../utils/cn';
 import Animated, { FadeInUp, FadeInDown, BounceIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import CurrencyService from '../services/CurrencyService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -95,11 +96,81 @@ export default function DashboardScreen() {
     }
   }, [currentUser]);
 
-  // Calculate financial data
+  // Calculate financial data with combined currency conversion
+  const [combinedBalance, setCombinedBalance] = useState<{
+    totalIncome: number;
+    totalExpenses: number;
+    netBalance: number;
+    currency: string;
+  }>({ totalIncome: 0, totalExpenses: 0, netBalance: 0, currency: 'USD' });
+
+  // Calculate combined balance across both local and home currencies
+  useEffect(() => {
+    const calculateCombinedBalance = async () => {
+      try {
+        const currencyService = CurrencyService.getInstance();
+        
+        // Get all personal expenses for the user
+        const userPersonalExpenses = personalExpenses.filter(e => e.userId === userId);
+        const localExpenses = userPersonalExpenses.filter(e => !e.isHomeCountry);
+        const homeExpenses = userPersonalExpenses.filter(e => e.isHomeCountry);
+
+        // Calculate local totals
+        const localIncome = localExpenses.filter(e => e.type === 'income');
+        const localExpenseItems = localExpenses.filter(e => e.type === 'expense');
+        const localTotalIncome = localIncome.reduce((sum, item) => sum + item.amount, 0);
+        const localTotalExpenses = localExpenseItems.reduce((sum, item) => sum + item.amount, 0);
+
+        // Calculate home totals (convert each using locked rate if present)
+        let homeIncomeInUSD = 0;
+        let homeExpensesInUSD = 0;
+        for (const entry of homeExpenses) {
+          const rate = entry.lockedExchangeRate || await currencyService.getExchangeRate(entry.currency, 'USD');
+          if (entry.type === 'income') {
+            homeIncomeInUSD += entry.amount * rate;
+          } else if (entry.type === 'expense') {
+            homeExpensesInUSD += entry.amount * rate;
+          }
+        }
+
+        // Calculate combined totals in USD
+        const combinedTotalIncome = localTotalIncome + homeIncomeInUSD;
+        const combinedTotalExpenses = localTotalExpenses + homeExpensesInUSD;
+        const combinedNetBalance = combinedTotalIncome - combinedTotalExpenses;
+
+        setCombinedBalance({
+          totalIncome: combinedTotalIncome,
+          totalExpenses: combinedTotalExpenses,
+          netBalance: combinedNetBalance,
+          currency: 'USD'
+        });
+      } catch (error) {
+        console.error('Error calculating combined balance:', error);
+        // Fallback to simple calculation
+        const userPersonalExpenses = personalExpenses.filter(e => e.userId === userId);
+        const totalIncome = userPersonalExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+        const totalExpenses = userPersonalExpenses.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+        const netBalance = totalIncome - totalExpenses;
+        
+        setCombinedBalance({
+          totalIncome,
+          totalExpenses,
+          netBalance,
+          currency: 'USD'
+        });
+      }
+    };
+
+    if (userId) {
+      calculateCombinedBalance();
+    }
+  }, [personalExpenses, userId]);
+
+  // Legacy calculation for backward compatibility
   const userPersonalExpenses = personalExpenses.filter(e => e.userId === userId);
   const totalIncome = userPersonalExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
   const totalExpenses = userPersonalExpenses.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
-  const netBalance = totalIncome - totalExpenses;
+  const netBalance = combinedBalance.netBalance; // Use combined balance
   
   const userBudgets = budgets.filter(b => b.userId === userId && b.isActive);
   const userGoals = financialGoals.filter(g => g.userId === userId && !g.isCompleted);
@@ -118,7 +189,7 @@ export default function DashboardScreen() {
       subtitle: 'Scan & Split',
       icon: 'camera',
       colors: [THEME_COLORS.primary, THEME_COLORS.primaryLight],
-      onPress: () => navigation.navigate('SplitBill')
+      onPress: () => navigation.navigate('SplitBill' as any)
     },
     {
       id: 'ai-analytics',
@@ -126,7 +197,7 @@ export default function DashboardScreen() {
       subtitle: 'Smart Insights',
       icon: 'analytics',
       colors: [THEME_COLORS.secondary, THEME_COLORS.secondaryLight],
-      onPress: () => navigation.navigate('Analytics')
+      onPress: () => navigation.navigate('Analytics' as any)
     },
     {
       id: 'split-bill',
@@ -134,7 +205,7 @@ export default function DashboardScreen() {
       subtitle: 'Group Expense',
       icon: 'people',
       colors: [THEME_COLORS.accent, THEME_COLORS.accentLight],
-      onPress: () => navigation.navigate('SplitBill')
+      onPress: () => navigation.navigate('SplitBill' as any)
     },
     {
       id: 'personal',
@@ -223,52 +294,40 @@ export default function DashboardScreen() {
             <View className="flex-row justify-between">
               <View className="items-center flex-1">
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
-                  Net Balance
+                  Combined Balance (USD)
                 </Text>
-                <Pressable onPress={() => navigation.navigate('Analytics')}>
+                <Pressable onPress={() => navigation.navigate('Analytics' as any)}>
                   <Text 
                     className="text-lg font-bold"
-                    style={{ color: netBalance >= 0 ? THEME_COLORS.success : THEME_COLORS.error }}
+                    style={{ color: combinedBalance.netBalance >= 0 ? THEME_COLORS.success : THEME_COLORS.error }}
                   >
-                    ${Math.abs(netBalance).toFixed(2)}
+                    ${Math.abs(combinedBalance.netBalance).toFixed(2)}
                   </Text>
                 </Pressable>
                 <Text style={{ color: THEME_COLORS.textLight, fontSize: 9 }}>
-                  {netBalance >= 0 ? 'Positive' : 'Negative'}
+                  {combinedBalance.netBalance >= 0 ? 'Positive' : 'Negative'}
                 </Text>
               </View>
-              
               <View className="items-center flex-1">
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
-                  You're Owed
+                  Total Income
                 </Text>
-                <Pressable onPress={() => navigation.navigate('SplitBill')}>
-                  <Text 
-                    className="text-lg font-bold"
-                    style={{ color: THEME_COLORS.success }}
-                  >
-                    ${totalOwed.toFixed(2)}
-                  </Text>
-                </Pressable>
+                <Text className="text-lg font-bold" style={{ color: THEME_COLORS.success }}>
+                  ${combinedBalance.totalIncome.toFixed(2)}
+                </Text>
                 <Text style={{ color: THEME_COLORS.textLight, fontSize: 9 }}>
-                  From friends
+                  Local + Home
                 </Text>
               </View>
-              
               <View className="items-center flex-1">
                 <Text style={{ color: THEME_COLORS.textSecondary, fontSize: 11, marginBottom: 2 }}>
-                  You Owe
+                  Total Expenses
                 </Text>
-                <Pressable onPress={() => navigation.navigate('SplitBill')}>
-                  <Text 
-                    className="text-lg font-bold"
-                    style={{ color: THEME_COLORS.error }}
-                  >
-                    ${totalOwing.toFixed(2)}
-                  </Text>
-                </Pressable>
+                <Text className="text-lg font-bold" style={{ color: THEME_COLORS.error }}>
+                  ${combinedBalance.totalExpenses.toFixed(2)}
+                </Text>
                 <Text style={{ color: THEME_COLORS.textLight, fontSize: 9 }}>
-                  To friends
+                  Local + Home
                 </Text>
               </View>
             </View>

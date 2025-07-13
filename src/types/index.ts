@@ -110,6 +110,7 @@ export interface PersonalExpense {
   isHomeCountry: boolean;
   userId: string;
   createdAt: Date;
+  lockedExchangeRate?: number; // Exchange rate to USD at time of entry
 }
 
 export interface Budget {

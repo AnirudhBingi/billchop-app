@@ -49,12 +49,15 @@ export default function GoalManagerModal() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { currentUser, settings } = useUserStore();
-  const { addGoal } = useExpenseStore();
+  const { addGoal, updateGoal } = useExpenseStore();
   
   const isDark = settings.theme === 'dark';
   const userId = currentUser?.id || '';
   // Defensive param handling
   const selectedMode = (route.params?.selectedMode === 'local' || route.params?.selectedMode === 'home') ? route.params.selectedMode : 'local';
+
+  const isEditing = !!route.params?.goalId && !!route.params?.prefill;
+  const prefill = route.params?.prefill;
 
   // Debug logging
   console.log('GoalManagerModal - Route params:', route.params);
@@ -68,12 +71,12 @@ export default function GoalManagerModal() {
     );
   }
   
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
-  const [category, setCategory] = useState('savings');
-  const [targetMonths, setTargetMonths] = useState('12');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [title, setTitle] = useState(prefill ? prefill.title : '');
+  const [description, setDescription] = useState(prefill ? prefill.description || '' : '');
+  const [targetAmount, setTargetAmount] = useState(prefill ? prefill.targetAmount.toString() : '');
+  const [category, setCategory] = useState(prefill ? prefill.category : 'savings');
+  const [targetMonths, setTargetMonths] = useState(prefill ? Math.ceil((new Date(prefill.targetDate).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)).toString() : '12');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(prefill ? prefill.priority : 'medium');
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   // Currency setup based on selected mode
@@ -90,6 +93,25 @@ export default function GoalManagerModal() {
 
     const targetDate = new Date();
     targetDate.setMonth(targetDate.getMonth() + parseInt(targetMonths));
+
+    if (isEditing && prefill) {
+      updateGoal(prefill.id, {
+        title: title.trim(),
+        description: description.trim(),
+        targetAmount: parseFloat(targetAmount),
+        category,
+        targetDate,
+        priority,
+        currency: currentCurrency.code,
+        isHomeCountry
+      });
+      Alert.alert(
+        'Success!',
+        'Goal updated successfully!',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+      return;
+    }
 
     const goal: FinancialGoal = {
       id: Date.now().toString(),

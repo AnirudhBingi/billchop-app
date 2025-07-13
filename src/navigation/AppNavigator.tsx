@@ -28,6 +28,7 @@ import AIChatScreen from '../screens/AIChatScreen';
 import SettleUpScreen from '../screens/SettleUpScreen';
 import ExpenseDetailScreen from '../screens/ExpenseDetailScreen';
 import FriendDetailScreen from '../screens/FriendDetailScreen';
+import { PersonalExpense, Budget, FinancialGoal } from '../types';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -40,9 +41,9 @@ export type RootStackParamList = {
   AddChore: { groupId?: string };
   GroupDetail: { groupId: string };
   Settings: undefined;
-  PersonalFinance: { initialType?: 'income' | 'expense'; selectedMode?: 'local' | 'home' };
-  BudgetManager: { selectedMode?: 'local' | 'home' };
-  GoalManager: { selectedMode?: 'local' | 'home' };
+  PersonalFinance: { initialType?: 'income' | 'expense'; selectedMode?: 'local' | 'home'; expenseId?: string; prefill?: PersonalExpense };
+  BudgetManager: { selectedMode?: 'local' | 'home'; budgetId?: string; prefill?: Budget };
+  GoalManager: { selectedMode?: 'local' | 'home'; goalId?: string; prefill?: FinancialGoal };
   CreateRide: { selectedPassenger?: string; rideDescription?: string };
   RideLog: undefined;
   AIChat: undefined;
